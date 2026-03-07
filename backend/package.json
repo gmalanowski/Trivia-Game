@@ -1,0 +1,16 @@
+{
+	"name": "backend",
+	"module": "src/index.ts",
+	"devDependencies": {
+		"@biomejs/biome": "2.4.6",
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"scripts": {
+		"start": "bun run src/index.ts",
+		"dev": "bun --watch src/index.ts"
+	},
+	"type": "module"
+}
