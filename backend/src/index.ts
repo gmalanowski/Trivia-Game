@@ -1,1 +1,20 @@
-console.log("Hello via Bun!");
+import { Hono } from "hono";
+import withPrisma from "./lib/prisma";
+import users from "./routes/users";
+import type { Env } from "./types";
+
+const app = new Hono<Env>();
+
+app.use("*", withPrisma);
+
+app.route("/api/v1/users", users);
+
+// app.get("/", (c) => {
+// 	return c.text("Hello Hono!");
+// });
+
+app.get("/health", (c) => {
+	return c.json({ status: "ok" }, 200);
+});
+
+export default app;
