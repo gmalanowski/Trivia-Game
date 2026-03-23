@@ -39,7 +39,6 @@ bun.lockb.old
 coverage/
 
 # editor files
-.vscode/
 .idea/
 
 # system files
