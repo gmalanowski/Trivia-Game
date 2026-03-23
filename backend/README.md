@@ -4,7 +4,7 @@
 > Ensure you have a .env file in the root project directory.
 
 > [!NOTE]
-> Current `prisma.schema` and `seed.ts` files are placeholders to verify the database connection
+> Current `schema.prisma` and `seed.ts` files are placeholders to verify the database connection
 
 1. Pull and run the db container (from root project directory)
 
@@ -18,7 +18,7 @@ cd backend/
 bun install
 ```
 
-3. Link .env and generate Prisma Client files:
+3. Link .env, apply migrations and generate Prisma Client files:
 ```bash
 # For Linux and macOS
 bun run setup
@@ -48,6 +48,11 @@ bun run dev
 
 
 # Other scripts
+
++ Create a migration (run after updating `schema.prisma`)
+```bash
+bun run db:update
+```
 
 + Run Prisma Studio:
 ```bash
