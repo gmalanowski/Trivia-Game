@@ -1,13 +1,55 @@
-# backend
+# Setup backend
 
-To install dependencies:
+> [!IMPORTANT] 
+> Ensure you have a .env file in the root project directory and make sure the [database container is running](../README.md).
 
+> [!NOTE]
+> Current `prisma.schema` and `seed.ts` files are placeholders to verify the database connection
+
+1. Install dependencies:
 ```bash
 bun install
 ```
 
-To run:
+2. Link .env and generate Prisma Client files:
+```bash
+# For Linux and macOS
+bun run setup
 
+# For Windows
+bun run setup-win
+```
+
+3. Seed the database:
+```bash
+bun run seed
+```
+
+4. Run development server:
+```bash
+bun run dev
+```
+
+
+# API Endpoints
+
++ `GET /health`: Returns `200 OK` to confirm the server is reachable.
+
++ `GET /users`: Returns a list of all users from the database.
+> [!NOTE]
+> This endpoint is a placeholder for testing purposes.
+
+
+# Other scripts
+
++ Run Prisma Studio:
+```bash
+bun run studio
+```
+
++ Run production server:
 ```bash
 bun run start
 ```
+
+

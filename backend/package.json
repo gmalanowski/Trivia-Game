@@ -13,6 +13,7 @@
 	},
 	"scripts": {
 		"setup": "ln -s ../.env .env & bunx --bun prisma generate",
+		"setup-win": "mklink /H .env ..\\.env & bunx --bun prisma generate",
 		"start": "bun run src/index.ts",
 		"dev": "bun --hot src/index.ts",
 		"watch": "bun --watch src/index.ts",
