@@ -9,10 +9,6 @@ app.use("*", withPrisma);
 
 app.route("/api/v1/users", users);
 
-// app.get("/", (c) => {
-// 	return c.text("Hello Hono!");
-// });
-
 app.get("/health", (c) => {
 	return c.json({ status: "ok" }, 200);
 });
