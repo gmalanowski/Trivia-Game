@@ -51,7 +51,7 @@ bun run dev
 
 + Create a migration (run after updating `schema.prisma`)
 ```bash
-bun run db:update
+bun run prisma-migrate-dev
 ```
 
 + Run Prisma Studio:

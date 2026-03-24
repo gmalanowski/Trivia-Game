@@ -17,7 +17,7 @@
 		"start": "bun run src/index.ts",
 		"dev": "bun --hot src/index.ts",
 		"watch": "bun --watch src/index.ts",
-		"db:update": "bunx --bun prisma migrate dev",
+		"prisma-migrate-dev": "bunx --bun prisma migrate dev",
 		"seed": "bunx --bun prisma db seed",
 		"studio": "bunx --bun prisma studio"
 	},
