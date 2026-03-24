@@ -3,14 +3,30 @@
 	"module": "src/index.ts",
 	"devDependencies": {
 		"@biomejs/biome": "2.4.6",
-		"@types/bun": "latest"
+		"@types/bun": "latest",
+		"@types/pg": "^8.18.0",
+		"prisma": "^7.5.0",
+		"tsx": "^4.21.0"
 	},
 	"peerDependencies": {
 		"typescript": "^5"
 	},
 	"scripts": {
+		"setup": "ln -s ../.env .env & bunx --bun prisma migrate deploy && bunx --bun prisma generate",
+		"setup-win": "mklink /H .env ..\\.env & bunx --bun prisma migrate deploy && bunx --bun prisma generate",
 		"start": "bun run src/index.ts",
-		"dev": "bun --watch src/index.ts"
+		"dev": "bun --hot src/index.ts",
+		"watch": "bun --watch src/index.ts",
+		"prisma-migrate-dev": "bunx --bun prisma migrate dev",
+		"seed": "bunx --bun prisma db seed",
+		"studio": "bunx --bun prisma studio"
 	},
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"@prisma/adapter-pg": "^7.5.0",
+		"@prisma/client": "^7.5.0",
+		"dotenv": "^17.3.1",
+		"hono": "^4.12.8",
+		"pg": "^8.20.0"
+	}
 }
