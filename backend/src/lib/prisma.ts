@@ -6,20 +6,20 @@ import type { Env } from "../types.js";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-	throw new Error("DATABASE_URL is not set");
+  throw new Error("DATABASE_URL is not set");
 }
 
 const adapter = new PrismaPg({
-	connectionString: databaseUrl,
+  connectionString: databaseUrl,
 });
 
 const prisma = new PrismaClient({ adapter });
 
 function withPrisma(c: Context<Env>, next: Next) {
-	if (!c.get("prisma")) {
-		c.set("prisma", prisma);
-	}
-	return next();
+  if (!c.get("prisma")) {
+    c.set("prisma", prisma);
+  }
+  return next();
 }
 
 export default withPrisma;
