@@ -1,0 +1,101 @@
+/* App.css */
+.start-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  background-color: #1a1a1a;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.start-screen h1 {
+  margin: 0;
+  font-size: 3.5rem;
+  color: #646cff;
+  /* Ładny fioletowy kolor z Reacta */
+}
+
+.start-screen p {
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.start-screen button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 10px 25px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  background-color: #646cff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.25s;
+}
+
+.start-screen button:hover {
+  background-color: #535bf2;
+  /* Po najechaniu myszką przycisk lekko zmienia kolor */
+}
+
+.filters-container {
+  margin: 25px 0;
+  padding: 30px;
+  background-color: #242424; /* Nieco jaśniejszy od tła */
+  border-radius: 12px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3); /* Wewnętrzny cień */
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.filter-group label {
+  font-size: 0.9rem;
+  color: #888;
+  font-weight: bold;
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: #1a1a1a;
+  color: white;
+  border: 1px solid #444;
+  cursor: pointer;
+}
+
+.difficulty-options {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  gap: 10px;
+}
+
+.radio-label {
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  border: 1px solid #444;
+  transition: 0.2s;
+}
+
+.radio-label:hover {
+  border-color: #646cff;
+}
