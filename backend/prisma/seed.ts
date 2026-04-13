@@ -1,60 +1,67 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { type Prisma, PrismaClient } from "../src/generated/prisma/client.js";
 
-// Przykladowe dane zeby sprawdzic czy dziala
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is missing");
+}
 
 const adapter = new PrismaPg({
-	connectionString: process.env.DATABASE_URL!,
+  connectionString: process.env.DATABASE_URL,
 });
 
 const prisma = new PrismaClient({
-	adapter,
+  adapter,
 });
 
 const userData: Prisma.UserCreateInput[] = [
-	{
-		name: "Alice",
-		email: "alice@prisma.io",
-		posts: {
-			create: [
-				{
-					title: "Join the Prisma Discord",
-					content: "https://pris.ly/discord",
-					published: true,
-				},
-				{
-					title: "Prisma on YouTube",
-					content: "https://pris.ly/youtube",
-				},
-			],
-		},
-	},
-	{
-		name: "Bob",
-		email: "bob@prisma.io",
-		posts: {
-			create: [
-				{
-					title: "Follow Prisma on Twitter",
-					content: "https://www.twitter.com/prisma",
-					published: true,
-				},
-			],
-		},
-	},
+  {
+    email: "alice@prisma.io",
+    username: "alice",
+    sessions: {
+      create: [
+        {
+          totalQuestions: 2,
+          score: 1,
+          status: "COMPLETED",
+          category: "Science",
+          difficulty: "easy",
+          results: {
+            create: [
+              {
+                questionText: "What is H2O?",
+                correctAnswer: "Water",
+                userAnswer: "Water",
+                isCorrect: true,
+              },
+              {
+                questionText: "What is the powerhouse of the cell?",
+                correctAnswer: "Mitochondria",
+                userAnswer: "Nucleus",
+                isCorrect: false,
+              },
+            ],
+          },
+        },
+      ],
+    },
+  },
+  {
+    email: "bob@prisma.io",
+    username: "bob",
+  },
 ];
 
 export async function main() {
-	for (const u of userData) {
-		await prisma.user.create({ data: u });
-	}
+  for (const u of userData) {
+    await prisma.user.create({ data: u });
+  }
 }
 
 main()
-	.catch((e) => {
-		console.error(e);
-		process.exit(1);
-	})
-	.finally(async () => {
-		await prisma.$disconnect();
-	});
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
