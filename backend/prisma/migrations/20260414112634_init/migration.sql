@@ -1,6 +1,9 @@
 -- CreateEnum
 CREATE TYPE "SessionStatus" AS ENUM ('IN_PROGRESS', 'COMPLETED', 'ABANDONED');
 
+-- CreateEnum
+CREATE TYPE "Difficulty" AS ENUM ('EASY', 'MEDIUM', 'HARD');
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,
@@ -21,7 +24,7 @@ CREATE TABLE "QuizSession" (
     "score" INTEGER NOT NULL DEFAULT 0,
     "totalQuestions" INTEGER NOT NULL,
     "category" TEXT,
-    "difficulty" TEXT,
+    "difficulty" "Difficulty",
     "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "endedAt" TIMESTAMP(3),
 
@@ -47,8 +50,14 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 -- CreateIndex
 CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
 
--- AddForeignKey
-ALTER TABLE "QuizSession" ADD CONSTRAINT "QuizSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- CreateIndex
+CREATE INDEX "QuizSession_userId_idx" ON "QuizSession"("userId");
+
+-- CreateIndex
+CREATE INDEX "QuizResult_sessionId_idx" ON "QuizResult"("sessionId");
 
 -- AddForeignKey
-ALTER TABLE "QuizResult" ADD CONSTRAINT "QuizResult_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "QuizSession"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "QuizSession" ADD CONSTRAINT "QuizSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QuizResult" ADD CONSTRAINT "QuizResult_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "QuizSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;

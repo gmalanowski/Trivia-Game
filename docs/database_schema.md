@@ -27,12 +27,12 @@ Represents an active or completed run of a quiz by a user.
 | Field            | Type            | Attributes                   | Description                                             |
 | ---------------- | --------------- | ---------------------------- | ------------------------------------------------------- |
 | `id`             | `String`        | `@id @default(uuid())`       | Primary key.                                            |
-| `userId`         | `String`        | Foreign Key                  | References `User.id`.                                   |
+| `userId`         | `String`        | Foreign Key                  | References `User.id`. Indexed, `onDelete: Cascade`.     |
 | `status`         | `SessionStatus` | `Enum` default `IN_PROGRESS` | Can be `IN_PROGRESS`, `COMPLETED`, `ABANDONED`.         |
 | `score`          | `Int`           | `@default(0)`                | Total accumulated score in this session.                |
 | `totalQuestions` | `Int`           |                              | Expected number of questions in the session.            |
 | `category`       | `String?`       | Optional                     | The trivia category (e.g., "Science", "History").       |
-| `difficulty`     | `String?`       | Optional                     | The difficulty level (e.g., "easy", "hard").            |
+| `difficulty`     | `Difficulty?`   | `Enum` Optional              | The difficulty level (`EASY`, `MEDIUM`, `HARD`).        |
 | `startedAt`      | `DateTime`      | `@default(now())`            | When the session started.                               |
 | `endedAt`        | `DateTime?`     | Optional                     | When the session ended.                                 |
 | `results`        | `QuizResult[]`  | Relation                     | One-to-many relationship tracking individual questions. |
@@ -44,7 +44,7 @@ Represents the result of a single question answered during a `QuizSession`.
 | Field           | Type       | Attributes             | Description                                           |
 | --------------- | ---------- | ---------------------- | ----------------------------------------------------- |
 | `id`            | `String`   | `@id @default(uuid())` | Primary key.                                          |
-| `sessionId`     | `String`   | Foreign Key            | References `QuizSession.id`.                          |
+| `sessionId`     | `String`   | Foreign Key            | References `QuizSession.id`. Indexed, `onDelete: Cascade`. |
 | `questionText`  | `String`   |                        | The text of the question asked.                       |
 | `userAnswer`    | `String?`  | Optional               | The answer provided by the user.                      |
 | `correctAnswer` | `String`   |                        | The correct answer for the question.                  |
@@ -54,6 +54,7 @@ Represents the result of a single question answered during a `QuizSession`.
 ## Enums
 
 - **SessionStatus**: `IN_PROGRESS`, `COMPLETED`, `ABANDONED`
+- **Difficulty**: `EASY`, `MEDIUM`, `HARD`
 
 ## Entity-Relationship Diagram
 
@@ -78,7 +79,7 @@ erDiagram
         Int score
         Int totalQuestions
         String category
-        String difficulty
+        Enum difficulty "EASY|MEDIUM|HARD"
         DateTime startedAt
         DateTime endedAt
     }
