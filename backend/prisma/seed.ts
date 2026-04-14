@@ -17,6 +17,7 @@ const userData: Prisma.UserCreateInput[] = [
   {
     email: "alice@prisma.io",
     username: "alice",
+    passwordHash: "$2a$12$4P261CVY4ym4Qn6U47h7t.sORrhhqlH53KMiVG5joAGEIkZQgXuIC",
     sessions: {
       create: [
         {
@@ -24,7 +25,7 @@ const userData: Prisma.UserCreateInput[] = [
           score: 1,
           status: "COMPLETED",
           category: "Science",
-          difficulty: "easy",
+          difficulty: "EASY",
           results: {
             create: [
               {

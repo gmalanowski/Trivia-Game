@@ -71,3 +71,6 @@ bun run start
 ```bash
 docker exec postgres_db psql -U user -d app_database -c "\dt" -c "SELECT email, username FROM \"User\";" -c "SELECT * FROM \"QuizSession\";" -c "SELECT * FROM \"QuizResult\";"
 ```
+
+> [!CAUTION]
+> You can drop development database with: `bunx --bun prisma migrate reset`

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "c3ba197f-dfcb-4704-87a3-33b7e8818077",
+    "email": "alice@prisma.io",
+    "username": "alice",
+    "passwordHash": "$2a$12$4P261CVY4ym4Qn6U47h7t.sORrhhqlH53KMiVG5joAGEIkZQgXuIC",
+    "createdAt": "2026-04-14T19:46:47.631Z",
+    "updatedAt": "2026-04-14T19:46:47.631Z",
+    "sessions": [
+      {
+        "id": "7ab86f17-c05d-4c1c-9e1d-012fc2fc7850",
+        "userId": "c3ba197f-dfcb-4704-87a3-33b7e8818077",
+        "status": "COMPLETED",
+        "score": 1,
+        "totalQuestions": 2,
+        "category": "Science",
+        "difficulty": "EASY",
+        "startedAt": "2026-04-14T19:46:47.631Z",
+        "endedAt": null,
+        "results": [
+          {
+            "id": "e25bd239-9634-4eaf-9ca4-b83504cbc95a",
+            "sessionId": "7ab86f17-c05d-4c1c-9e1d-012fc2fc7850",
+            "questionText": "What is H2O?",
+            "userAnswer": "Water",
+            "correctAnswer": "Water",
+            "isCorrect": true,
+            "createdAt": "2026-04-14T19:46:47.631Z"
+          },
+          {
+            "id": "859c669e-6daf-4b0b-9d8d-d7e3537dff4b",
+            "sessionId": "7ab86f17-c05d-4c1c-9e1d-012fc2fc7850",
+            "questionText": "What is the powerhouse of the cell?",
+            "userAnswer": "Nucleus",
+            "correctAnswer": "Mitochondria",
+            "isCorrect": false,
+            "createdAt": "2026-04-14T19:46:47.631Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "c4893f85-cf84-46a9-8c99-2d874b091b16",
+    "email": "bob@prisma.io",
+    "username": "bob",
+    "passwordHash": null,
+    "createdAt": "2026-04-14T19:46:47.658Z",
+    "updatedAt": "2026-04-14T19:46:47.658Z",
+    "sessions": []
+  }
+]
