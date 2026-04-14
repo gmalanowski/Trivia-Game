@@ -13,6 +13,12 @@ enum SessionStatus {
   ABANDONED
 }
 
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -27,24 +33,26 @@ model User {
 model QuizSession {
   id     String @id @default(uuid())
   userId String
-  user   User   @relation(fields: [userId], references: [id])
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   status         SessionStatus @default(IN_PROGRESS)
   score          Int           @default(0)
   totalQuestions Int
   category       String?
-  difficulty     String?
+  difficulty     Difficulty?
 
   startedAt DateTime  @default(now())
   endedAt   DateTime?
 
   results QuizResult[]
+
+  @@index([userId])
 }
 
 model QuizResult {
   id        String      @id @default(uuid())
   sessionId String
-  session   QuizSession @relation(fields: [sessionId], references: [id])
+  session   QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   questionText  String
   userAnswer    String?
@@ -52,4 +60,6 @@ model QuizResult {
   isCorrect     Boolean
 
   createdAt DateTime @default(now())
+
+  @@index([sessionId])
 }
