@@ -49,10 +49,13 @@ bun run dev
 
 # Other scripts
 
-+ Create a migration (run after updating `schema.prisma`)
++ Creating and applying migrations (run after updating `schema.prisma`):
 ```bash
 bun run prisma-migrate-dev
 ```
+
+> [!NOTE]
+> If you add `--name <name>`, it bypasses the interactive prompt from Prisma.
 
 + Run Prisma Studio:
 ```bash
@@ -64,4 +67,10 @@ bun run studio
 bun run start
 ```
 
++ Accessing database
+```bash
+docker exec postgres_db psql -U user -d app_database -c "\dt" -c "SELECT email, username FROM \"User\";" -c "SELECT * FROM \"QuizSession\";" -c "SELECT * FROM \"QuizResult\";"
+```
 
+> [!CAUTION]
+> You can drop development database with: `bunx --bun prisma migrate reset`
