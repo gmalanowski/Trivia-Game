@@ -19,6 +19,15 @@ export interface OpenTDBResponse {
   results: OpenTDBQuestion[];
 }
 
+export interface OpenTDBCategory {
+  id: number;
+  name: string;
+}
+
+interface OpenTDBCategoriesResponse {
+  trivia_categories: OpenTDBCategory[];
+}
+
 export class OpenTDBError extends Error {
   constructor(
     public code: number,
@@ -101,4 +110,20 @@ export async function fetchQuestions(
         `Unknown OpenTDB response code: ${data.response_code}`,
       );
   }
+}
+
+/**
+ * Fetches all available categories from Open Trivia Database.
+ */
+export async function fetchCategories(): Promise<OpenTDBCategory[]> {
+  const response = await fetch("https://opentdb.com/api_category.php");
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch categories from OpenTDB API: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as OpenTDBCategoriesResponse;
+  return Array.isArray(data.trivia_categories) ? data.trivia_categories : [];
 }
