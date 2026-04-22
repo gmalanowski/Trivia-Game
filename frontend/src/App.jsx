@@ -1,42 +1,39 @@
-import './App.css'
+// src/App.jsx
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Header from './components/Header';
+import './App.css';
+import QuestionsPage from './pages/QuestionsPage';
+import ResultsPage from './pages/ResultsPage';
+import QuizConfigPage from './pages/QuizConfigPage'; // 1. IMPORTUJEMY
+import StartPage from './pages/StartPage';
 
+
+
+
+
+// --- Główny komponent Aplikacji ---
 function App() {
-  // Tutaj w przyszłości dodamy logikę, np. co ma się stać po kliknięciu przycisku
-
   return (
-    <div className="start-screen">
-      <h1>Trivia Game</h1>
-      <p>Witaj w quizie sprawdzającym Twoją wiedzę!</p>
-      <div className="filters-container">
-        <div className="filter-group">
-          <label htmlFor="category">Wybierz kategorię:</label>
-          <select id="category">
-            <option value="">Wszystkie</option>
-            <option value="geography">Geografia</option>
-            <option value="history">Historia</option>
-            <option value="sport">Sport</option>
-          </select>
-        </div>
+    <Router>
+      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
 
-        <div className="filter-group">
-          <label>Poziom trudności:</label>
-          <div className="difficulty-options">
-            <label className="radio-label">
-              <input type="radio" name="difficulty" value="easy" defaultChecked /> Łatwy
-            </label>
-            <label className="radio-label">
-              <input type="radio" name="difficulty" value="medium" /> Średni
-            </label>
-            <label className="radio-label">
-              <input type="radio" name="difficulty" value="hard" /> Trudny
-            </label>
-          </div>
-        </div>
+        {/* Nasz wspólny pasek na górze - wstawiony tylko raz! */}
+        <Header />
+
+        {/* Dynamiczny środek strony - zmienia się w zależności od paska adresu */}
+        <Routes>
+          <Route path="/" element={<StartPage />} />
+          <Route path="/quizpage" element={<QuizConfigPage />} />
+          <Route path="/questionspage" element={<QuestionsPage />} />
+          <Route path="/podsumowanie-wyniku" element={<ResultsPage />} />
+          {/* Dodatkowe puste ścieżki żeby uniknąć błędów */}
+          <Route path="/rejestracja" element={<div style={{ padding: '50px', color: '#000' }}>Rejestracja w budowie</div>} />
+          <Route path="/ranking" element={<div style={{ padding: '50px', color: '#000' }}>Ranking w budowie</div>} />
+          <Route path="/profil" element={<div style={{ padding: '50px', color: '#000' }}>Profil w budowie</div>} />
+        </Routes>
       </div>
-      <button>Rozpocznij grę</button>
-    </div>
-
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;
