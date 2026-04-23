@@ -25,11 +25,11 @@ function App() {
           <Route path="/" element={<StartPage />} />
           <Route path="/quizpage" element={<QuizConfigPage />} />
           <Route path="/questionspage" element={<QuestionsPage />} />
-          <Route path="/podsumowanie-wyniku" element={<ResultsPage />} />
+          <Route path="/results" element={<ResultsPage />} />
           {/* Dodatkowe puste ścieżki żeby uniknąć błędów */}
-          <Route path="/rejestracja" element={<div style={{ padding: '50px', color: '#000' }}>Rejestracja w budowie</div>} />
-          <Route path="/ranking" element={<div style={{ padding: '50px', color: '#000' }}>Ranking w budowie</div>} />
-          <Route path="/profil" element={<div style={{ padding: '50px', color: '#000' }}>Profil w budowie</div>} />
+          <Route path="/register" element={<div style={{ padding: '50px', color: '#000' }}>Registration coming soon</div>} />
+          <Route path="/leaderboard" element={<div style={{ padding: '50px', color: '#000' }}>Leaderboard coming soon</div>} />
+          <Route path="/profile" element={<div style={{ padding: '50px', color: '#000' }}>Profile coming soon</div>} />
         </Routes>
       </div>
     </Router>
