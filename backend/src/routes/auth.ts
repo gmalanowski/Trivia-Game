@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
-import { AuthError, AuthResponse, LoginDto, RegisterDto } from "../lib/auth";
+import { AuthError, AuthResponse, LoginDto, RegisterDto } from "../lib/auth_lib";
 import type { Env } from "../types";
 
 const auth = new Hono<Env>();
