@@ -1,20 +1,45 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { jwt } from "hono/jwt";
 import withPrisma from "./lib/prisma";
+import auth from "./routes/auth";
 import questions from "./routes/questions";
 import users from "./routes/users";
 import type { Env } from "./types";
 
+const jwtSecret = Bun.env.JWT_SECRET;
+
+if (!jwtSecret) {
+  throw new Error("FATAL: JWT_SECRET is not set in .env");
+}
+
 const app = new Hono<Env>();
+
+app.use('*', async (c, next) => {
+  c.set('jwtSecret', jwtSecret)
+  await next()
+})
 
 app.use("/api/*", cors());
 app.use("*", withPrisma);
 
-app.route("/api/v1/users", users);
-app.route("/api/v1/questions", questions);
 
+// Public endpoints
 app.get("/health", (c) => {
   return c.json({ status: "ok" }, 200);
 });
+
+
+// Protected routes
+app.use("/api/v1/users/*", async (c, next) => {
+  const jwtMiddleware = jwt({ secret: jwtSecret, alg: "HS256" });
+  return jwtMiddleware(c, next);
+})
+
+
+// Mounted endpoints
+app.route("/api/v1/auth", auth);
+app.route("/api/v1/users", users);
+app.route("/api/v1/questions", questions);
 
 export default app;

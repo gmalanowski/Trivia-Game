@@ -8,7 +8,7 @@ const users = new Hono<Env>();
 users.get("/", async (c) => {
   const prisma = c.var.prisma;
   const users = await prisma.user.findMany({
-    include: { posts: true },
+    include: { sessions: true },
   });
   return c.json({ users });
 });
