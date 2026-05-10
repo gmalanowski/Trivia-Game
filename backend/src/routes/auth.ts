@@ -1,13 +1,14 @@
+import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
-import { AuthError, AuthResponse, LoginDto, RegisterDto } from "../lib/auth_lib";
+import { AuthError, AuthResponse, loginSchema, registerSchema } from "../lib/auth_lib";
 import type { Env } from "../types";
 
 const auth = new Hono<Env>();
 
-auth.post("/register", async (c) => {
+auth.post("/register", zValidator("json", registerSchema), async (c) => {
   const prisma = c.var.prisma;
-  const { email, username, password } = await c.req.json<RegisterDto>();
+  const { email, username, password } = c.req.valid("json");
 
   if (!email || !username || !password) {
     return c.json<AuthError>({ error: "Email, username, and password are required" }, 400);
@@ -65,9 +66,9 @@ auth.post("/register", async (c) => {
 });
 
 
-auth.post("/login", async (c) => {
+auth.post("/login", zValidator("json", loginSchema), async (c) => {
   const prisma = c.var.prisma;
-  const { identifier, password } = await c.req.json<LoginDto>();
+  const { identifier, password } = c.req.valid("json");
 
   if (!identifier || !password) {
     return c.json({error: "Email/username and password are required"}, 400);

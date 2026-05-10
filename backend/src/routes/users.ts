@@ -1,10 +1,12 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { unlink } from "node:fs/promises";
 import { changePasswordSchema, updateUserSchema, userParamsSchema, UserProfileResponse } from "../lib/users_lib";
 import type { Env } from "../types";
 
 const users = new Hono<Env>();
 
+// Get user profile
 users.get("/:username", zValidator("param", userParamsSchema), async (c) => {
   const username = c.req.valid("param").username;
   const prisma = c.var.prisma;
@@ -31,6 +33,7 @@ users.get("/:username", zValidator("param", userParamsSchema), async (c) => {
   }, 200);
 });
 
+// Update profile
 users.patch("/me", zValidator("json", updateUserSchema), async (c) => {
   const prisma = c.var.prisma;
   const userId = c.var.jwtPayload.sub;
@@ -77,6 +80,7 @@ users.patch("/me", zValidator("json", updateUserSchema), async (c) => {
     }
 });
 
+// Change password
 users.patch("/me/password", zValidator("json", changePasswordSchema), async (c) => {
   const prisma = c.var.prisma;
   const { currentPassword, newPassword } = c.req.valid("json");
@@ -116,6 +120,45 @@ users.patch("/me/password", zValidator("json", changePasswordSchema), async (c) 
   });
 
   return c.json({ message: "Password updated successfully" }, 200);
+});
+
+users.delete("/me", async (c) => {
+  const prisma = c.var.prisma;
+  const userId = c.var.jwtPayload.sub;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        avatarUrl: true
+      }
+    });
+
+    if (!user) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    await prisma.user.delete({
+      where: {
+        id: userId
+      }
+    });
+
+    if (user.avatarUrl) {
+      try {
+        await unlink(`static/${user.avatarUrl}`);
+      } catch (err) {
+        console.warn(`Could not delete avatar file for deleted user: ${userId}`);
+      }
+    }
+
+    return c.json({ message: "Account successfully deleted" }, 200);
+  } catch (err) {
+    console.error(`Failed to delete account: ${err}`);
+    return c.json({ error: "Failed to delete account" }, 500);
+  }
 });
 
 export default users;
