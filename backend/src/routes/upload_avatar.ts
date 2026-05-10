@@ -56,9 +56,9 @@ upload_avatar.post("/avatar", async (c) => {
       user: {
         id: updatedUser.id,
         username: updatedUser.username,
-        bio: updatedUser.bio || "",
-        avatarUrl: updatedUser.avatarUrl || "",
-        title: updatedUser.title || ""
+        bio: updatedUser.bio,
+        avatarUrl: updatedUser.avatarUrl,
+        title: updatedUser.title
       } 
     }, 200);
 

@@ -10,7 +10,6 @@ import upload_avatar from "./routes/upload_avatar";
 import users from "./routes/users";
 import type { Env } from "./types";
 
-
 const jwtSecret = Bun.env.JWT_SECRET;
 
 if (!jwtSecret) {
@@ -22,10 +21,8 @@ const app = new Hono<Env>();
 app.use('*', async (c, next) => {
   c.set('jwtSecret', jwtSecret)
   await next()
-})
-
-app.use(logger())
-
+});
+app.use(logger());
 app.use("/api/*", cors());
 app.use("*", withPrisma);
 
