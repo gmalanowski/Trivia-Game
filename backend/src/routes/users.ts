@@ -103,7 +103,7 @@ users.patch("/me/password", zValidator("json", changePasswordSchema), async (c) 
     return c.json({ error: "Cannot change password for OAuth account" }, 400);
   }
 
-  const matching = Bun.password.verify(currentPassword, user.passwordHash);
+  const matching = await Bun.password.verify(currentPassword, user.passwordHash);
   if (!matching) {
     return c.json({ error: "Incorrect current password" }, 401);
   }
