@@ -6,7 +6,6 @@ import { logger } from "hono/logger";
 import withPrisma from "./lib/prisma";
 import auth from "./routes/auth";
 import questions from "./routes/questions";
-import upload_avatar from "./routes/upload_avatar";
 import users from "./routes/users";
 import type { Env } from "./types";
 
@@ -29,7 +28,8 @@ app.use("*", withPrisma);
 
 // Serve static images (for user avatars)
 app.use("/static/*", serveStatic({
-  root: "./",
+  root: "./static",
+  rewriteRequestPath: (path) => path.replace(/^\/static/, ""),
   onNotFound: (path, c) => {
     console.log(`${path} is not found, you access ${c.req.path}`)
   }
@@ -46,13 +46,12 @@ app.get("/health", (c) => {
 app.use("/api/v1/users/*", async (c, next) => {
   const jwtMiddleware = jwt({ secret: jwtSecret, alg: "HS256" });
   return jwtMiddleware(c, next);
-})
+});
 
 
 // Mounted endpoints
 app.route("/api/v1/auth", auth);
 app.route("/api/v1/users", users);
-app.route("/api/v1/users", upload_avatar);
 app.route("/api/v1/questions", questions);
 
 export default app;
