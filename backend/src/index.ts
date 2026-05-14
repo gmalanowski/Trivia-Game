@@ -5,6 +5,7 @@ import { jwt } from "hono/jwt";
 import { logger } from "hono/logger";
 import withPrisma from "./lib/prisma";
 import auth from "./routes/auth";
+import categories from "./routes/categories";
 import questions from "./routes/questions";
 import users from "./routes/users";
 import type { Env } from "./types";
@@ -53,5 +54,6 @@ app.use("/api/v1/users/*", async (c, next) => {
 app.route("/api/v1/auth", auth);
 app.route("/api/v1/users", users);
 app.route("/api/v1/questions", questions);
+app.route("/api/v1/categories", categories);
 
 export default app;
