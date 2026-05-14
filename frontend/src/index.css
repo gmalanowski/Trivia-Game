@@ -1,18 +1,20 @@
-/* index.css */
+/* src/index.css */
+html,
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-  background-color: #242424;
-  color: rgba(255, 255, 255, 0.87);
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+  /* Podstawowa, ładna czcionka */
+  background-color: #f5f5f5;
+  /* Delikatnie szare tło całej strony */
 }
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  max-width: 100%;
+  /* Usuwa domyślną blokadę szerokości Vite */
+  margin: 0;
+  padding: 0;
 }
