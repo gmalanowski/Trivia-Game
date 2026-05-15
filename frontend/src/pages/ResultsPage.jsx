@@ -50,8 +50,8 @@ export default function ResultsPage() {
         border: '1px solid #333',
         boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
       }}>
-        <h1 style={{ color: theme.accent, fontSize: '3rem', marginBottom: '10px' }}>Koniec!</h1>
-        <p style={{ color: theme.textSec, fontSize: '1.2rem', marginBottom: '30px' }}>Twoje wyniki podsumowują się następująco:</p>
+        <h1 style={{ color: theme.accent, fontSize: '3rem', marginBottom: '10px' }}>Finished!</h1>
+        <p style={{ color: theme.textSec, fontSize: '1.2rem', marginBottom: '30px' }}>Here is your final result summary:</p>
 
         {/* Wynik punktowy */}
         <div style={{ marginBottom: '40px' }}>
@@ -64,14 +64,14 @@ export default function ResultsPage() {
             color: percentage >= 50 ? '#4caf50' : '#f44336',
             fontWeight: 'bold'
           }}>
-            Skuteczność: {percentage}%
+            Accuracy: {percentage}%
           </div>
           <div style={{
             marginTop: '12px',
             fontSize: '1rem',
             color: theme.textSec,
           }}>
-            Czas: <span style={{ color: '#8fd3ff', fontWeight: 'bold' }}>{formatElapsedTime(completionTimeSeconds)}</span>
+            Time: <span style={{ color: '#8fd3ff', fontWeight: 'bold' }}>{formatElapsedTime(completionTimeSeconds)}</span>
           </div>
         </div>
 
@@ -93,7 +93,7 @@ export default function ResultsPage() {
             onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
             onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
           >
-            Zagraj ponownie
+            Play Again
           </button>
 
           <button
@@ -108,7 +108,7 @@ export default function ResultsPage() {
               cursor: 'pointer'
             }}
           >
-            Wróć do menu głównego
+            Back to Main Menu
           </button>
         </div>
       </div>

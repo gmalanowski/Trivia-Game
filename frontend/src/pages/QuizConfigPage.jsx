@@ -26,7 +26,7 @@ export default function QuizConfigPage() {
 
   const handleStart = () => {
     const selectedCategoryName =
-      categories.find((cat) => String(cat.id) === String(selectedCategory))?.name || 'Losowa';
+      categories.find((cat) => String(cat.id) === String(selectedCategory))?.name || 'Random';
 
     navigate('/questionspage', {
       state: { category: selectedCategory, difficulty, categoryName: selectedCategoryName },
@@ -62,11 +62,11 @@ export default function QuizConfigPage() {
           border: '1px solid #333',
         }}
       >
-        <h1 style={{ color: theme.accent, marginBottom: '30px' }}>Konfiguracja Quizu</h1>
+        <h1 style={{ color: theme.accent, marginBottom: '30px' }}>Quiz Setup</h1>
 
         <div style={{ textAlign: 'left', marginBottom: '20px' }}>
           <label style={{ color: theme.textMuted, display: 'block', marginBottom: '8px' }}>
-            Wybierz kategorię:
+            Choose category:
           </label>
           <select
             value={selectedCategory}
@@ -82,7 +82,7 @@ export default function QuizConfigPage() {
             }}
           >
             <option value="">
-              {isLoadingCategories ? 'Ładowanie kategorii...' : 'Wszystkie (Losowo)'}
+              {isLoadingCategories ? 'Loading categories...' : 'All (Random)'}
             </option>
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
@@ -94,7 +94,7 @@ export default function QuizConfigPage() {
 
         <div style={{ textAlign: 'left', marginBottom: '30px' }}>
           <label style={{ color: theme.textMuted, display: 'block', marginBottom: '8px' }}>
-            Poziom trudności:
+            Difficulty:
           </label>
           <div style={{ display: 'flex', gap: '10px' }}>
             {['easy', 'medium', 'hard'].map((level) => (
@@ -134,7 +134,7 @@ export default function QuizConfigPage() {
             cursor: 'pointer',
           }}
         >
-          Rozpocznij grę
+          Start Game
         </button>
       </div>
     </div>

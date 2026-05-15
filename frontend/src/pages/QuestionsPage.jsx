@@ -15,7 +15,7 @@ export default function QuestionsPage() {
   const { category, difficulty, categoryName } = location.state || {
     category: '',
     difficulty: 'medium',
-    categoryName: 'Losowa',
+    categoryName: 'Random',
   };
 
   const [questions, setQuestions] = useState([]);
@@ -80,7 +80,7 @@ export default function QuestionsPage() {
     } else {
       // KONIEC GRY: Przenosimy do wyników i wysyłamy punkty w "state"
       const finalScore = selectedAnswer === currentQ.correct_answer ? score + 1 : score;
-      navigate('/podsumowanie-wyniku', {
+      navigate('/results', {
         state: {
           totalScore: finalScore,
           maxQuestions: questions.length,
@@ -90,15 +90,15 @@ export default function QuestionsPage() {
     }
   };
 
-  if (isLoading) return <div style={centerStyle}>Ładowanie pytań z bazy...</div>;
-  if (error) return <div style={centerStyle}>Błąd: {error}</div>;
-  if (questions.length === 0) return <div style={centerStyle}>Brak pytań.</div>;
+  if (isLoading) return <div style={centerStyle}>Loading questions...</div>;
+  if (error) return <div style={centerStyle}>Error: {error}</div>;
+  if (questions.length === 0) return <div style={centerStyle}>No questions available.</div>;
 
   const currentQ = questions[currentIndex];
   const difficultyLabel =
-    difficulty === 'easy' ? 'Łatwy' : difficulty === 'hard' ? 'Trudny' : 'Średni';
+    difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Hard' : 'Medium';
   const selectedCategoryLabel =
-    categoryName || (category ? currentQ.category : 'Losowa');
+    categoryName || (category ? currentQ.category : 'Random');
 
   const theme = {
     background: '#121212',
@@ -149,7 +149,7 @@ export default function QuestionsPage() {
           fontSize: '13px',
           color: '#ddd'
         }}>
-          Kategoria: {selectedCategoryLabel}
+          Category: {selectedCategoryLabel}
         </span>
         <span style={{
           backgroundColor: 'rgba(124, 77, 255, 0.15)',
@@ -160,7 +160,7 @@ export default function QuestionsPage() {
           color: theme.accent,
           fontWeight: 'bold'
         }}>
-          Trudność: {difficultyLabel}
+          Difficulty: {difficultyLabel}
         </span>
         <span style={{
           backgroundColor: '#1f2833',
@@ -171,12 +171,12 @@ export default function QuestionsPage() {
           color: '#8fd3ff',
           fontWeight: 'bold'
         }}>
-          Czas: {formatElapsedTime(elapsedSeconds)}
+          Time: {formatElapsedTime(elapsedSeconds)}
         </span>
       </div>
 
       <div style={{ color: theme.textSec, marginBottom: '30px' }}>
-        Pytanie <span style={{ color: theme.textMain }}>{currentIndex + 1}</span> / {questions.length}
+        Question <span style={{ color: theme.textMain }}>{currentIndex + 1}</span> / {questions.length}
       </div>
 
       <div style={{
@@ -243,7 +243,7 @@ export default function QuestionsPage() {
           transition: 'all 0.3s ease'
         }}
       >
-        {currentIndex < questions.length - 1 ? 'Następne pytanie' : 'Zakończ Quiz'}
+        {currentIndex < questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
       </button>
     </div>
   );

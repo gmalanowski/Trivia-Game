@@ -15,7 +15,7 @@ export const fetchQuizQuestions = async (amount = 10, difficulty = 'medium', cat
     const response = await fetch(url);
     
     if (!response.ok) {
-      let backendMessage = `Błąd serwera: ${response.status}`;
+      let backendMessage = `Server error: ${response.status}`;
       try {
         const errorData = await response.json();
         if (errorData?.error) {
@@ -32,7 +32,7 @@ export const fetchQuizQuestions = async (amount = 10, difficulty = 'medium', cat
     return questionsArray;
     
   } catch (error) {
-    console.error("Błąd podczas pobierania pytań z backendu:", error);
+    console.error("Error while fetching questions from backend:", error);
     throw error; 
   }
 };
@@ -41,10 +41,10 @@ export const fetchQuizQuestions = async (amount = 10, difficulty = 'medium', cat
 export const fetchCategories = async () => {
   try {
     const response = await fetch(`${BACKEND_URL}/categories`);
-    if (!response.ok) throw new Error('Nie udało się pobrać kategorii');
+    if (!response.ok) throw new Error('Failed to fetch categories');
     return await response.json();
   } catch (error) {
-    console.error("Błąd kategorii:", error);
+    console.error("Category fetch error:", error);
     throw error;
   }
 };

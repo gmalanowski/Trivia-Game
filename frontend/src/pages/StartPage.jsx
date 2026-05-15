@@ -7,25 +7,25 @@ export default function StartPage() {
         <div className="start-logo" aria-label="Trivia Game logo">
           <div className="start-logo__icon">TG</div>
           <div>
-            <p className="start-logo__tag">Wiedza. Rywalizacja. Emocje.</p>
+            <p className="start-logo__tag">Knowledge. Competition. Emotion.</p>
             <h1 className="start-logo__title">Trivia Game</h1>
           </div>
         </div>
 
         <p className="start-page__description">
-          Sprawdź swoją wiedzę w pytaniach z różnych kategorii, wybierz poziom trudności i pobij swój
-          najlepszy wynik. Każdy quiz to nowy zestaw pytań i realny test refleksu.
+          Test your knowledge with questions from multiple categories, choose the difficulty level, and beat
+          your best score. Every quiz is a fresh set of questions and a real reflex challenge.
         </p>
 
         <div className="start-page__actions">
           <Link to="/quizpage" className="start-btn start-btn--primary">
-            Rozpocznij Quiz
+            Start Quiz
           </Link>
-          <Link to="/rejestracja" className="start-btn start-btn--accent">
-            Zarejestruj się
+          <Link to="/register" className="start-btn start-btn--accent">
+            Sign Up
           </Link>
-          <Link to="/ranking" className="start-btn start-btn--secondary">
-            Zobacz Ranking
+          <Link to="/leaderboard" className="start-btn start-btn--secondary">
+            View Leaderboard
           </Link>
         </div>
       </div>

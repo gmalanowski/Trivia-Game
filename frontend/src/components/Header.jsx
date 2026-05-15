@@ -28,8 +28,8 @@ export default function Header() {
   });
 
   return (
-    <header style={{ 
-      display: 'flex', 
+    <header style={{
+      display: 'flex',
       justifyContent: 'space-between', // Rozsuwa elementy na boki
       alignItems: 'center',
       width: '100%', // Rozciągnięty na całej długości
@@ -43,7 +43,7 @@ export default function Header() {
       <div>
         <h2 style={{ margin: 0, fontSize: '26px', fontWeight: 'bold' }}>
           <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
-            Trivia<span style={{color: colors.primary}}>Game</span> {/* Dodany kolorowy akcent w logo */}
+            Trivia<span style={{ color: colors.primary }}>Game</span> {/* Dodany kolorowy akcent w logo */}
           </Link>
         </h2>
       </div>
@@ -51,8 +51,8 @@ export default function Header() {
       {/* Prawa sekcja - Menu */}
       <nav style={{ display: 'flex', gap: '15px' }}>
         <Link to="/quizpage" style={getNavStyle('/quizpage')}>Quiz</Link>
-        <Link to="/ranking" style={getNavStyle('/ranking')}>Ranking</Link>
-        <Link to="/profil" style={getNavStyle('/profil')}>Profil</Link>
+        <Link to="/leaderboard" style={getNavStyle('/leaderboard')}>Leaderboard</Link>
+        <Link to="/profile" style={getNavStyle('/profile')}>Profile</Link>
       </nav>
     </header>
   );
