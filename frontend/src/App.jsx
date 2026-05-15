@@ -4,12 +4,10 @@ import Header from './components/Header';
 import './App.css';
 import QuestionsPage from './pages/QuestionsPage';
 import ResultsPage from './pages/ResultsPage';
-import QuizConfigPage from './pages/QuizConfigPage'; // 1. IMPORTUJEMY
+import QuizConfigPage from './pages/QuizConfigPage';
 import StartPage from './pages/StartPage';
-
-
-
-
+import LeaderboardPage from './pages/LeaderboardPage';
+import ProfilePage from './pages/ProfilePage';
 
 // --- Główny komponent Aplikacji ---
 function App() {
@@ -26,10 +24,13 @@ function App() {
           <Route path="/quizpage" element={<QuizConfigPage />} />
           <Route path="/questionspage" element={<QuestionsPage />} />
           <Route path="/results" element={<ResultsPage />} />
+
+          {/* 2. PODMIENIAMY PUSTY DIV NA NASZ KOMPONENT */}
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+
           {/* Dodatkowe puste ścieżki żeby uniknąć błędów */}
           <Route path="/register" element={<div style={{ padding: '50px', color: '#000' }}>Registration coming soon</div>} />
-          <Route path="/leaderboard" element={<div style={{ padding: '50px', color: '#000' }}>Leaderboard coming soon</div>} />
-          <Route path="/profile" element={<div style={{ padding: '50px', color: '#000' }}>Profile coming soon</div>} />
+          <Route path="/profile" element={<ProfilePage />} />
         </Routes>
       </div>
     </Router>
