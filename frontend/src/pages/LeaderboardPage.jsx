@@ -41,7 +41,7 @@ export default function LeaderboardPage() {
   if (isLoading) {
     return (
       <div style={{ textAlign: 'center', padding: '50px', backgroundColor: theme.background, color: theme.textMain, minHeight: '100vh' }}>
-        Ładowanie rankingu...
+        Loading leaderboard...
       </div>
     );
   }
