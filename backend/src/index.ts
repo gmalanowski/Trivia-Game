@@ -6,6 +6,7 @@ import { logger } from "hono/logger";
 import withPrisma from "./lib/prisma";
 import auth from "./routes/auth";
 import categories from "./routes/categories";
+import leaderboard from "./routes/leaderboard";
 import questions from "./routes/questions";
 import users from "./routes/users";
 import type { Env } from "./types";
@@ -49,11 +50,22 @@ app.use("/api/v1/users/*", async (c, next) => {
   return jwtMiddleware(c, next);
 });
 
+app.use("/api/v1/questions/start", async (c, next) => {
+  const jwtMiddleware = jwt({ secret: jwtSecret, alg: "HS256" });
+  return jwtMiddleware(c, next);
+});
+
+app.use("/api/v1/questions/:sessionId/finish", async (c, next) => {
+  const jwtMiddleware = jwt({ secret: jwtSecret, alg: "HS256" });
+  return jwtMiddleware(c, next);
+});
+
 
 // Mounted endpoints
 app.route("/api/v1/auth", auth);
 app.route("/api/v1/users", users);
 app.route("/api/v1/questions", questions);
 app.route("/api/v1/categories", categories);
+app.route("/api/v1/leaderboard", leaderboard);
 
 export default app;

@@ -1,9 +1,9 @@
 import { Hono } from "hono";
 import type { Env } from "../types";
 
-const ranking = new Hono<Env>();
+const leaderboard = new Hono<Env>();
 
-ranking.get("/", async (c) => {
+leaderboard.get("/", async (c) => {
   const prisma = c.var.prisma;
 
   const highestExpUsers = await prisma.user.findMany({
@@ -21,3 +21,5 @@ ranking.get("/", async (c) => {
 
   return c.json(highestExpUsers, 200);
 });
+
+export default leaderboard;

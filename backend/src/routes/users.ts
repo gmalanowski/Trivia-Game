@@ -28,6 +28,7 @@ users.get("/:username", zValidator("param", userParamsSchema), async (c) => {
       username: existingUser.username,
       bio: existingUser.bio,
       avatarUrl: existingUser.avatarUrl,
+      exp: existingUser.exp,
       title: existingUser.title
     }
   }, 200);
@@ -65,6 +66,7 @@ users.patch("/me", zValidator("json", updateUserSchema), async (c) => {
           username: true,
           bio: true,
           avatarUrl: true,
+          exp: true,
           title: true
         }
       });
@@ -222,6 +224,7 @@ users.post("/avatar", async (c) => {
         username: updatedUser.username,
         bio: updatedUser.bio,
         avatarUrl: updatedUser.avatarUrl,
+        exp: updatedUser.exp,
         title: updatedUser.title
       } 
     }, 200);

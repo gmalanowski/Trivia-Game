@@ -8,6 +8,7 @@ export interface UserProfileResponse {
     username: string;
     bio: string | null;
     avatarUrl: string | null;
+    exp: number | null;
     title: string | null;
   };
 }
@@ -43,7 +44,7 @@ export async function updateTitle(userId: string, prisma: PrismaClient) {
 
   if (!existingUser) {
     throw Error("Title couldn't be updated. User not found.");
-  } // is this needed if it's going to be called only when completing a quiz?
+  }
 
   let rank = Math.floor(existingUser.exp / 1000);
   const titleArray = Object.values(Title);
