@@ -15,5 +15,5 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["src/"]
+  "include": ["src/", "prisma/seed.ts"]
 }
