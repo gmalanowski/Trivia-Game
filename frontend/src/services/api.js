@@ -1,6 +1,6 @@
 // src/services/api.js
 
-const BACKEND_URL = 'http://localhost:3000/api/v1'; 
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
 // 1. Dodaliśmy 'category' jako trzeci argument
 export const fetchQuizQuestions = async (amount = 10, difficulty = 'medium', category = '') => {
