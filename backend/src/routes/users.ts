@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { unlink } from "node:fs/promises";
-import { changePasswordSchema, updateUserSchema, userParamsSchema, UserProfileResponse } from "../lib/users_lib";
+import { calculateTitle, changePasswordSchema, updateUserSchema, userParamsSchema, UserProfileResponse } from "../lib/users_lib";
 import type { Env } from "../types";
 
 const users = new Hono<Env>();
@@ -28,7 +28,8 @@ users.get("/:username", zValidator("param", userParamsSchema), async (c) => {
       username: existingUser.username,
       bio: existingUser.bio,
       avatarUrl: existingUser.avatarUrl,
-      title: existingUser.title
+      exp: existingUser.exp,
+      title: calculateTitle(existingUser.exp)
     }
   }, 200);
 });
@@ -65,6 +66,7 @@ users.patch("/me", zValidator("json", updateUserSchema), async (c) => {
           username: true,
           bio: true,
           avatarUrl: true,
+          exp: true,
           title: true
         }
       });
@@ -222,7 +224,8 @@ users.post("/avatar", async (c) => {
         username: updatedUser.username,
         bio: updatedUser.bio,
         avatarUrl: updatedUser.avatarUrl,
-        title: updatedUser.title
+        exp: updatedUser.exp,
+        title: calculateTitle(updatedUser.exp)
       } 
     }, 200);
 
