@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { calculateTitle } from "../lib/users_lib";
 import type { Env } from "../types";
 
 const leaderboard = new Hono<Env>();
@@ -10,8 +11,7 @@ leaderboard.get("/", async (c) => {
     select: {
       username: true,
       exp: true,
-      title: true,
-      avatarUrl: true // zapytac czy frontend to chce
+      avatarUrl: true
     },
     orderBy: {
       exp: "desc"
@@ -19,7 +19,14 @@ leaderboard.get("/", async (c) => {
     take: 10
   });
 
-  return c.json(highestExpUsers, 200);
+  const leaderboardWithTitles = highestExpUsers.map((user) => {
+    return {
+      ...user,
+      title: calculateTitle(user.exp)
+    };
+  });
+
+  return c.json(leaderboardWithTitles, 200);
 });
 
 export default leaderboard;

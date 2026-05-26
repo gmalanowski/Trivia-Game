@@ -4,7 +4,6 @@ import { Difficulty } from "../generated/prisma/enums";
 import type { FetchQuestionsOptions } from "../lib/opentdb";
 import { fetchQuestions, OpenTDBError } from "../lib/opentdb";
 import { finishQuizSchema, shuffleArray } from "../lib/questions_lib";
-import { updateTitle } from "../lib/users_lib";
 import { Env } from "../types";
 
 const questions = new Hono<Env>();
@@ -291,8 +290,6 @@ questions.post("/:sessionId/finish", zValidator("json", finishQuizSchema), async
         },
       }),
     ]);
-
-    updateTitle(userId, prisma);
 
     return c.json({
       message: "Quiz completed successfully!",
