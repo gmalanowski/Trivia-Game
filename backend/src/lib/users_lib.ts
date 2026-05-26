@@ -1,4 +1,5 @@
 import z from "zod";
+import { PrismaClient, Title } from "../generated/prisma/client";
 
 export interface UserProfileResponse {
   message: string; 
@@ -31,3 +32,40 @@ export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),
   newPassword: z.string().min(12, "New password must be at least 12 characters"),
 });
+
+
+export async function updateTitle(userId: string, prisma: PrismaClient) {
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      id: userId
+    }
+  });
+
+  if (!existingUser) {
+    throw Error("Title couldn't be updated. User not found.");
+  } // is this needed if it's going to be called only when completing a quiz?
+
+  let rank = Math.floor(existingUser.exp / 1000);
+  const titleArray = Object.values(Title);
+  console.log(titleArray);
+
+  if (rank >= titleArray.length) {
+    rank = titleArray.length - 1;
+  } 
+
+  const newTitle = titleArray[rank];
+
+  if (existingUser.title == newTitle) {
+    return;
+  }
+
+  prisma.user.update({
+    where: {
+      id: userId
+    },
+    data: {
+      title: newTitle
+    }
+  });
+
+}

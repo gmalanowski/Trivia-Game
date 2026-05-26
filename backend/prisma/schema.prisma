@@ -19,6 +19,52 @@ enum Difficulty {
   HARD
 }
 
+// 0 EXP      BEGINNER
+// 1,000 EXP  TRAINEE
+// 2,000 EXP  NOVICE
+// 3,000 EXP  ROOKIE
+// 4,000 EXP  AMATEUR
+// 5,000 EXP  APPRENTICE
+// 6,000 EXP  INTERMEDIATE
+// 7,000 EXP  COMPETENT
+// 8,000 EXP  PROFICIENT
+// 9,000 EXP  EXPERIENCED
+// 10,000 EXP ADVANCED
+// 11,000 EXP SPECIALIST
+// 12,000 EXP PROFESSIONAL
+// 13,000 EXP EXPERT
+// 14,000 EXP VETERAN
+// 15,000 EXP ELITE
+// 16,000 EXP MASTER
+// 17,000 EXP GRANDMASTER
+// 18,000 EXP CHAMPION
+// 19,000 EXP LEGEND
+// 20,000 EXP PINNACLE
+
+enum Title {
+  BEGINNER
+  TRAINEE
+  NOVICE
+  ROOKIE
+  AMATEUR
+  APPRENTICE
+  INTERMEDIATE
+  COMPETENT
+  PROFICIENT
+  EXPERIENCED
+  ADVANCED
+  SPECIALIST
+  PROFESSIONAL
+  EXPERT
+  VETERAN
+  ELITE
+  MASTER
+  GRANDMASTER
+  CHAMPION
+  LEGEND
+  PINNACLE
+}
+
 model User {
   id           String  @id @default(uuid())
   email        String  @unique
@@ -27,7 +73,8 @@ model User {
 
   bio       String?
   avatarUrl String?
-  title     String?
+  title     Title   @default(BEGINNER)
+  exp       Int     @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
