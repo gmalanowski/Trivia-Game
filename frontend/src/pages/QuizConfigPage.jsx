@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchCategories } from '../services/api.js';
+import { createCategoriesSSE } from '../services/sseService.js';
 
 export default function QuizConfigPage() {
   const navigate = useNavigate();
@@ -8,20 +8,35 @@ export default function QuizConfigPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  // Queue state for categories
+  const [categoryQueuePosition, setCategoryQueuePosition] = useState(null);
+  const [categoryTotalInQueue, setCategoryTotalInQueue] = useState(null);
+  const [categoryEstimatedWait, setCategoryEstimatedWait] = useState(null);
 
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const data = await fetchCategories();
-        setCategories(Array.isArray(data) ? data : []);
-      } catch {
-        setCategories([]);
-      } finally {
-        setIsLoadingCategories(false);
-      }
-    };
+    const sse = createCategoriesSSE();
 
-    loadCategories();
+    sse.onQueueUpdate(({ position, totalInQueue, estimatedWaitSeconds }) => {
+      setCategoryQueuePosition(position);
+      setCategoryTotalInQueue(totalInQueue);
+      setCategoryEstimatedWait(estimatedWaitSeconds);
+    });
+
+    sse.onResult((data) => {
+      setCategories(Array.isArray(data) ? data : []);
+      setIsLoadingCategories(false);
+      setCategoryQueuePosition(null);
+    });
+
+    sse.onError(() => {
+      setCategories([]);
+      setIsLoadingCategories(false);
+      setCategoryQueuePosition(null);
+    });
+
+    return () => {
+      sse.close();
+    };
   }, []);
 
   const handleStart = () => {

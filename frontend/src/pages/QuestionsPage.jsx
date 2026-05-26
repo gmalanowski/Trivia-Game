@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom'; // Import nawigacji
-import { fetchQuizQuestions } from '../services/api.js';
+import { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { createQuestionSSE } from '../services/sseService.js';
 
 const formatElapsedTime = (totalSeconds) => {
   const minutes = Math.floor(totalSeconds / 60);
@@ -9,7 +9,7 @@ const formatElapsedTime = (totalSeconds) => {
 };
 
 export default function QuestionsPage() {
-  const navigate = useNavigate(); // Hook do przenoszenia między stronami
+  const navigate = useNavigate();
   const location = useLocation();
 
   const { category, difficulty, categoryName } = location.state || {
@@ -22,24 +22,46 @@ export default function QuestionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Queue state
+  const [queuePosition, setQueuePosition] = useState(null);
+  const [totalInQueue, setTotalInQueue] = useState(null);
+  const [estimatedWaitSeconds, setEstimatedWaitSeconds] = useState(null);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [shuffledAnswers, setShuffledAnswers] = useState([]);
-  const [score, setScore] = useState(0); // STAN PUNKTACJI
+  const [score, setScore] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  const sseRef = useRef(null);
+
   useEffect(() => {
-    const loadQuestions = async () => {
-      try {
-        const data = await fetchQuizQuestions(10, difficulty, category);
-        setQuestions(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
-      }
+    // Connect via SSE
+    const sse = createQuestionSSE({ amount: 10, difficulty, category });
+
+    sse.onQueueUpdate(({ position, totalInQueue: total, estimatedWaitSeconds: wait }) => {
+      setQueuePosition(position);
+      setTotalInQueue(total);
+      setEstimatedWaitSeconds(wait);
+    });
+
+    sse.onResult((data) => {
+      setQuestions(data);
+      setIsLoading(false);
+      setQueuePosition(null);
+    });
+
+    sse.onError((message) => {
+      setError(message);
+      setIsLoading(false);
+      setQueuePosition(null);
+    });
+
+    sseRef.current = sse;
+
+    return () => {
+      sse.close();
     };
-    loadQuestions();
   }, [category, difficulty]);
 
   useEffect(() => {
@@ -69,7 +91,6 @@ export default function QuestionsPage() {
   const handleNextQuestion = () => {
     const currentQ = questions[currentIndex];
 
-    // SPRAWDZANIE: Jeśli dobra odpowiedź, dodaj punkt
     if (selectedAnswer === currentQ.correct_answer) {
       setScore(prev => prev + 1);
     }
@@ -78,7 +99,6 @@ export default function QuestionsPage() {
       setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(null);
     } else {
-      // KONIEC GRY: Przenosimy do wyników i wysyłamy punkty w "state"
       const finalScore = selectedAnswer === currentQ.correct_answer ? score + 1 : score;
       navigate('/results', {
         state: {
@@ -90,9 +110,151 @@ export default function QuestionsPage() {
     }
   };
 
-  if (isLoading) return <div style={centerStyle}>Loading questions...</div>;
-  if (error) return <div style={centerStyle}>Error: {error}</div>;
-  if (questions.length === 0) return <div style={centerStyle}>No questions available.</div>;
+  // Render queue waiting screen
+  if (isLoading && queuePosition !== null) {
+    return (
+      <div style={{
+        minHeight: 'calc(100vh - 70px)',
+        backgroundColor: '#121212',
+        color: '#ffffff',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 20px',
+      }}>
+        <div style={{
+          backgroundColor: '#1e1e1e',
+          padding: '50px',
+          borderRadius: '20px',
+          textAlign: 'center',
+          maxWidth: '450px',
+          width: '100%',
+          border: '1px solid #333',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+        }}>
+          {/* Spinner */}
+          <div style={{
+            width: '60px',
+            height: '60px',
+            border: '4px solid #333',
+            borderTop: '4px solid #7c4dff',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 30px',
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
+          <h2 style={{ color: '#7c4dff', marginBottom: '10px' }}>Waiting in Queue</h2>
+          <p style={{ color: '#b3b3b3', marginBottom: '25px', lineHeight: '1.5' }}>
+            The trivia API has a rate limit. Your request has been queued and will be processed shortly.
+          </p>
+
+          <div style={{
+            backgroundColor: '#2a2a2a',
+            borderRadius: '12px',
+            padding: '20px',
+            marginBottom: '15px',
+          }}>
+            <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: '#7c4dff' }}>
+              {queuePosition}
+              <span style={{ fontSize: '1.2rem', color: '#b3b3b3' }}> / {totalInQueue}</span>
+            </div>
+            <div style={{ color: '#b3b3b3', fontSize: '0.9rem', marginTop: '5px' }}>
+              Position in queue
+            </div>
+          </div>
+
+          {estimatedWaitSeconds > 0 && (
+            <div style={{ color: '#8fd3ff', fontSize: '1.1rem' }}>
+              Estimated wait: ~{estimatedWaitSeconds} seconds
+            </div>
+          )}
+          {estimatedWaitSeconds === 0 && (
+            <div style={{ color: '#4caf50', fontSize: '1.1rem' }}>
+              Processing your request now...
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading && error === null && queuePosition === null) {
+    return (
+      <div style={{
+        minHeight: 'calc(100vh - 70px)',
+        backgroundColor: '#121212',
+        color: '#ffffff',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        padding: '50px',
+        fontSize: '20px',
+      }}>
+        Connecting...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        minHeight: 'calc(100vh - 70px)',
+        backgroundColor: '#121212',
+        color: '#ffffff',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '50px',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          backgroundColor: '#1e1e1e',
+          padding: '40px',
+          borderRadius: '16px',
+          maxWidth: '450px',
+          border: '1px solid #333',
+        }}>
+          <h2 style={{ color: '#f44336', marginBottom: '15px' }}>Error</h2>
+          <p style={{ color: '#b3b3b3', marginBottom: '25px' }}>{error}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/quizpage')}
+            style={{
+              padding: '12px 30px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              backgroundColor: '#7c4dff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '30px',
+              cursor: 'pointer',
+            }}
+          >
+            Back to Setup
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (questions.length === 0) {
+    return (
+      <div style={{
+        textAlign: 'center',
+        padding: '50px',
+        fontSize: '20px',
+        color: '#fff',
+        backgroundColor: '#121212',
+        minHeight: '100vh',
+      }}>
+        No questions available.
+      </div>
+    );
+  }
 
   const currentQ = questions[currentIndex];
   const difficultyLabel =
@@ -248,5 +410,3 @@ export default function QuestionsPage() {
     </div>
   );
 }
-
-const centerStyle = { textAlign: 'center', padding: '50px', fontSize: '20px', color: '#fff', backgroundColor: '#121212', minHeight: '100vh' };
