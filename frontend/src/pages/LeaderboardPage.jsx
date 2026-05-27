@@ -1,31 +1,44 @@
 import { useState, useEffect } from 'react';
 
-// PRZYKŁADOWE DANE (Mock Data) - na razie, żeby widok ładnie wyglądał.
-// W Etapie 3 zamienimy to na fetch() z backendu od chłopaków.
-const MOCK_DATA = [
-  { id: 1, username: 'jankowalski', played: 120, correctPercent: 85 },
-  { id: 2, username: 'anna_nowak', played: 95, correctPercent: 82 },
-  { id: 3, username: 'piotrek_z', played: 150, correctPercent: 78 },
-  { id: 4, username: 'mistrz_wiedzy', played: 60, correctPercent: 75 },
-  { id: 5, username: 'kasia123', played: 55, correctPercent: 72 },
-  { id: 6, username: 'zawodnik_x', played: 52, correctPercent: 70 },
-  { id: 7, username: 'test_user', played: 50, correctPercent: 68 },
-];
-
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Symulacja ładowania danych
+  const BACKEND_URL = 'http://localhost:3000/api/v1/leaderboard';
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setLeaderboard(MOCK_DATA);
-      setIsLoading(false);
-    }, 500); // pół sekundy udawanego ładowania
-    return () => clearTimeout(timer);
+    const loadLeaderboard = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await fetch(BACKEND_URL);
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+          setLeaderboard(data);
+        } else {
+          throw new Error("Received data is not an array.");
+        }
+      } catch (err) {
+        console.error("Details of the error:", err);
+        setError(err.message === 'Failed to fetch'
+          ? "Cannot connect to the server. Check if the backend is running and if port 3000 is correct."
+          : err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadLeaderboard();
   }, []);
 
-  // Motyw kolorystyczny skopiowany z Twojego QuestionsPage
   const theme = {
     background: '#121212',
     cardBg: '#1e1e1e',
@@ -38,15 +51,21 @@ export default function LeaderboardPage() {
     bronze: '#CD7F32',
   };
 
-  if (isLoading) {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px', backgroundColor: theme.background, color: theme.textMain, minHeight: '100vh' }}>
-        Loading leaderboard...
-      </div>
-    );
-  }
+  if (isLoading) return <div style={centerStyle(theme)}>Loading leaderboard...</div>;
 
-  // Rozdzielamy Top 3 na podium i resztę do tabeli
+  if (error) return (
+    <div style={centerStyle(theme)}>
+      <div style={{ color: '#ff5252', fontSize: '24px', marginBottom: '15px' }}>⚠️ Connection error</div>
+      <div style={{ fontSize: '14px', opacity: 0.8, maxWidth: '400px', margin: '0 auto', lineHeight: '1.6' }}>{error}</div>
+      <button
+        onClick={() => window.location.reload()}
+        style={{ marginTop: '30px', padding: '12px 24px', backgroundColor: theme.accent, color: '#fff', border: 'none', borderRadius: '30px', cursor: 'pointer', fontWeight: 'bold' }}
+      >
+        Try again
+      </button>
+    </div>
+  );
+
   const top3 = leaderboard.slice(0, 3);
   const restOfPlayers = leaderboard.slice(3);
 
@@ -61,37 +80,28 @@ export default function LeaderboardPage() {
       alignItems: 'center',
       fontFamily: 'sans-serif'
     }}>
-
       <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: '50px' }}>
 
-        {/* NAGŁÓWEK */}
         <div style={{ textAlign: 'center' }}>
           <h1 style={{ fontSize: '36px', marginBottom: '10px', fontWeight: 'bold' }}>Leaderboard</h1>
-          <p style={{ color: theme.textSec, fontSize: '15px', maxWidth: '400px', margin: '0 auto', lineHeight: '1.5' }}>
-            To be included in the ranking, answer at least 50 questions 😎
-          </p>
+          <p style={{ color: theme.textSec }}>Best players in the game!</p>
         </div>
 
-        {/* PODIUM (Top 3) */}
+        {/* PODIUM */}
         <div style={{
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'flex-end',
           gap: '15px',
-          height: '220px',
+          height: '240px',
           marginBottom: '20px'
         }}>
-          {/* 2. Miejsce (Lewa strona) */}
           {top3[1] && <PodiumStep player={top3[1]} place={2} height="120px" color={theme.silver} theme={theme} />}
-
-          {/* 1. Miejsce (Środek - najwyższe) */}
           {top3[0] && <PodiumStep player={top3[0]} place={1} height="170px" color={theme.gold} theme={theme} />}
-
-          {/* 3. Miejsce (Prawa strona) */}
           {top3[2] && <PodiumStep player={top3[2]} place={3} height="80px" color={theme.bronze} theme={theme} />}
         </div>
 
-        {/* TABELA (Reszta graczy) */}
+        {/* TABELA */}
         <div style={{
           width: '100%',
           backgroundColor: theme.cardBg,
@@ -100,84 +110,90 @@ export default function LeaderboardPage() {
           overflow: 'hidden',
           boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
         }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
-            <thead>
-              <tr style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', borderBottom: `2px solid ${theme.border}` }}>
-                <th style={{ padding: '20px', color: theme.textSec, fontWeight: '500' }}>Standing</th>
-                <th style={{ padding: '20px', color: theme.textSec, fontWeight: '500' }}>Player</th>
-                <th style={{ padding: '20px', color: theme.textSec, fontWeight: '500' }}>Games</th>
-                <th style={{ padding: '20px', color: theme.textSec, fontWeight: '500' }}>Accuracy</th>
-              </tr>
-            </thead>
-            <tbody>
-              {restOfPlayers.map((player, index) => (
-                <tr key={player.id} style={{
-                  borderBottom: index !== restOfPlayers.length - 1 ? `1px solid ${theme.border}` : 'none',
-                  transition: 'background-color 0.2s ease',
-                }}
-                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(124, 77, 255, 0.05)'}
-                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  <td style={{ padding: '20px', fontWeight: 'bold', color: theme.textSec }}>{index + 4}</td>
-                  <td style={{ padding: '20px', color: theme.accent, fontWeight: 'bold' }}>{player.username}</td>
-                  <td style={{ padding: '20px' }}>{player.played}</td>
-                  <td style={{ padding: '20px', color: '#4CAF50', fontWeight: 'bold' }}>{player.correctPercent}%</td>
+          {leaderboard.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: theme.textSec }}>No data available in the leaderboard.</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+              <thead>
+                <tr style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', borderBottom: `2px solid ${theme.border}` }}>
+                  <th style={{ padding: '20px', color: theme.textSec }}>Standing</th>
+                  <th style={{ padding: '20px', color: theme.textSec }}>Player</th>
+                  <th style={{ padding: '20px', color: theme.textSec }}>Title</th>
+                  <th style={{ padding: '20px', color: theme.textSec }}>Experience</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {restOfPlayers.map((player, index) => (
+                  <tr key={player.username || index} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                    <td style={{ padding: '20px', fontWeight: 'bold', color: theme.textSec }}>{index + 4}</td>
+                    <td style={{ padding: '20px', color: theme.accent, fontWeight: 'bold' }}>{player.username}</td>
+                    <td style={{ padding: '20px', color: '#8fd3ff' }}>{player.title}</td>
+                    <td style={{ padding: '20px', fontWeight: 'bold' }}>{player.exp} XP</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-
       </div>
     </div>
   );
 }
 
-// Pomocniczy komponent rysujący jeden słupek podium
 function PodiumStep({ player, place, height, color, theme }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100px' }}>
-
-      {/* Informacje o graczu nad słupkiem */}
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '110px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '12px' }}>
-        <span style={{ fontSize: '15px', fontWeight: 'bold', color: theme.textMain, marginBottom: '4px', textAlign: 'center', wordBreak: 'break-word' }}>
+        <img
+          src={player.avatarUrl || `https://ui-avatars.com/api/?name=${player.username}&background=random`}
+          alt={player.username}
+          style={{ width: '50px', height: '50px', borderRadius: '50%', marginBottom: '8px', border: `3px solid ${color}`, objectFit: 'cover' }}
+        />
+        <span style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center', display: 'block', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {player.username}
         </span>
-        <span style={{ fontSize: '13px', color: theme.textSec, fontWeight: '500' }}>
-          {player.correctPercent}%
-        </span>
+        <span style={{ fontSize: '11px', color: theme.accent, textTransform: 'uppercase', fontWeight: 'bold' }}>{player.title}</span>
       </div>
-
-      {/* Kolorowy słupek */}
       <div style={{
         width: '100%',
         height: height,
         backgroundColor: theme.accent,
         display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        paddingTop: '15px',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        paddingTop: '10px',
         borderTopLeftRadius: '12px',
         borderTopRightRadius: '12px',
-        boxShadow: `0 -5px 20px rgba(124, 77, 255, 0.15)`
+        boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.2)'
       }}>
-        {/* Kółko z numerem miejsca (np. złote dla 1) */}
         <div style={{
-          width: '36px',
-          height: '36px',
+          width: '30px',
+          height: '30px',
           backgroundColor: color,
           borderRadius: '50%',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          fontWeight: '900',
+          fontWeight: 'bold',
           color: '#121212',
-          fontSize: '18px',
-          boxShadow: '0 4px 10px rgba(0,0,0,0.4)'
-        }}>
-          {place}
-        </div>
+          marginBottom: '5px'
+        }}>{place}</div>
+        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{player.exp} XP</span>
       </div>
     </div>
   );
 }
+
+const centerStyle = (theme) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  textAlign: 'center',
+  padding: '20px',
+  backgroundColor: theme.background,
+  color: theme.textMain,
+  minHeight: '100vh',
+  fontFamily: 'sans-serif'
+});

@@ -2,35 +2,37 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import './App.css';
+
+// Importy stron
 import QuestionsPage from './pages/QuestionsPage';
 import ResultsPage from './pages/ResultsPage';
 import QuizConfigPage from './pages/QuizConfigPage';
 import StartPage from './pages/StartPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
 
 // --- Główny komponent Aplikacji ---
 function App() {
   return (
     <Router>
-      <div style={{ minHeight: '100vh', backgroundColor: '#ffffff' }}>
+      <div style={{ minHeight: '100vh', backgroundColor: '#121212' }}> {/* Zmieniłem tło na ciemne, żeby pasowało do reszty */}
 
-        {/* Nasz wspólny pasek na górze - wstawiony tylko raz! */}
+        {/* Nasz wspólny pasek na górze */}
         <Header />
 
-        {/* Dynamiczny środek strony - zmienia się w zależności od paska adresu */}
+        {/* Dynamiczny środek strony */}
         <Routes>
           <Route path="/" element={<StartPage />} />
           <Route path="/quizpage" element={<QuizConfigPage />} />
           <Route path="/questionspage" element={<QuestionsPage />} />
           <Route path="/results" element={<ResultsPage />} />
-
-          {/* 2. PODMIENIAMY PUSTY DIV NA NASZ KOMPONENT */}
           <Route path="/leaderboard" element={<LeaderboardPage />} />
-
-          {/* Dodatkowe puste ścieżki żeby uniknąć błędów */}
-          <Route path="/register" element={<div style={{ padding: '50px', color: '#000' }}>Registration coming soon</div>} />
           <Route path="/profile" element={<ProfilePage />} />
+
+          {/* NOWE TRASY */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<div style={{ padding: '50px', color: '#fff' }}>Registration coming soon</div>} />
         </Routes>
       </div>
     </Router>
