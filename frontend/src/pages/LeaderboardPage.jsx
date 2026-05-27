@@ -5,7 +5,7 @@ export default function LeaderboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const BACKEND_URL = 'http://localhost:3000/api/v1/leaderboard';
+  const BACKEND_URL = `${import.meta.env.VITE_BACKEND_URL}/leaderboard` || 'http://localhost:3000/api/v1/leaderboard';
 
   useEffect(() => {
     const loadLeaderboard = async () => {
