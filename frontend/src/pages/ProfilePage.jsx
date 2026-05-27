@@ -76,7 +76,7 @@ export default function ProfilePage() {
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '25px', backgroundColor: theme.cardBg, padding: '30px', borderRadius: '16px', border: `1px solid ${theme.border}` }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(124, 77, 255, 0.2)', border: `2px solid ${theme.accent}`, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '28px', color: theme.accent }}>
-            {user.avatarUrl ? <img src={`${import.meta.env.VITE_BACKEND_URL}/static/${user.avatarUrl}` || `http://localhost:3000/static/${user.avatarUrl}`} alt="Avatar" style={{ width: '100%', borderRadius: '50%' }} /> : user.username[0].toUpperCase()}
+            {user.avatarUrl ? <img src={`${(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1').replace(/\/api\/v1\/?$/, '')}/static/${user.avatarUrl}`} alt="Avatar" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} /> : user.username[0].toUpperCase()}
           </div>
           <div>
             <h1 style={{ margin: 0 }}>{user.username}</h1>

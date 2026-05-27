@@ -145,7 +145,7 @@ function PodiumStep({ player, place, height, color, theme }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '110px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '12px' }}>
         <img
-          src={player.avatarUrl || `https://ui-avatars.com/api/?name=${player.username}&background=random`}
+          src={player.avatarUrl ? `${(import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000/api/v1').replace(/\/api\/v1\/?$/, '')}/static/${player.avatarUrl}` : `https://ui-avatars.com/api/?name=${player.username}&background=random`}
           alt={player.username}
           style={{ width: '50px', height: '50px', borderRadius: '50%', marginBottom: '8px', border: `3px solid ${color}`, objectFit: 'cover' }}
         />
