@@ -28,7 +28,6 @@ export default function LoginPage() {
       const response = await fetch('http://localhost:3000/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // ZMIANA: Wysyłamy "identifier" zamiast "username"
         body: JSON.stringify({
           identifier: username,
           password: password
@@ -38,7 +37,6 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        // Wyświetlamy błąd w czytelniejszy sposób
         const msg = data.error?.message || data.error || 'Błąd logowania';
         throw new Error(typeof msg === 'object' ? JSON.stringify(msg) : msg);
       }

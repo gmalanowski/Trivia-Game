@@ -5,7 +5,6 @@ export default function LeaderboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Zmień ten port na taki, jaki faktycznie mają koledzy w konsoli backendu!
   const BACKEND_URL = 'http://localhost:3000/api/v1/leaderboard';
 
   useEffect(() => {
@@ -29,7 +28,6 @@ export default function LeaderboardPage() {
         }
       } catch (err) {
         console.error("Details of the error:", err);
-        // If this is a 'Failed to fetch' error, we add a hint about CORS/Port
         setError(err.message === 'Failed to fetch'
           ? "Cannot connect to the server. Check if the backend is running and if port 3000 is correct."
           : err.message);

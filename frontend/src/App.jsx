@@ -10,7 +10,7 @@ import QuizConfigPage from './pages/QuizConfigPage';
 import StartPage from './pages/StartPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
-import LoginPage from './pages/LoginPage'; // <--- DODANY IMPORT
+import LoginPage from './pages/LoginPage';
 
 // --- Główny komponent Aplikacji ---
 function App() {

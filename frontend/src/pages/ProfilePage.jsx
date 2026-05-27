@@ -5,7 +5,6 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Sprawdzamy, czy mamy token i zapisaną nazwę użytkownika
   const token = localStorage.getItem('token');
   const storedUsername = localStorage.getItem('username');
 
