@@ -12,6 +12,8 @@ const colors = {
 
 export default function Header() {
   const location = useLocation();
+  const token = localStorage.getItem('token');
+  const isAuthenticated = Boolean(token);
 
   // Funkcja pomocnicza do sprawdzania, czy dany link jest aktywny
   const isActive = (path) => location.pathname === path;
@@ -52,7 +54,11 @@ export default function Header() {
       <nav style={{ display: 'flex', gap: '15px' }}>
         <Link to="/quizpage" style={getNavStyle('/quizpage')}>Quiz</Link>
         <Link to="/leaderboard" style={getNavStyle('/leaderboard')}>Leaderboard</Link>
-        <Link to="/profile" style={getNavStyle('/profile')}>Profile</Link>
+        {isAuthenticated ? (
+          <Link to="/profile" style={getNavStyle('/profile')}>Profile</Link>
+        ) : (
+          <Link to="/login" style={getNavStyle('/login')}>Login</Link>
+        )}
       </nav>
     </header>
   );

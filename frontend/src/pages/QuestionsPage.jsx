@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom'; // Import nawigacji
-import { fetchQuizQuestions } from '../services/api.js';
+import { startQuizSession, finishQuizSession } from '../services/api.js';
 
 const formatElapsedTime = (totalSeconds) => {
   const minutes = Math.floor(totalSeconds / 60);
@@ -18,21 +18,38 @@ export default function QuestionsPage() {
     categoryName: 'Random',
   };
 
+  const token = localStorage.getItem('token');
+
   const [questions, setQuestions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [shuffledAnswers, setShuffledAnswers] = useState([]);
-  const [score, setScore] = useState(0); // STAN PUNKTACJI
+  const [sessionId, setSessionId] = useState(null);
+  const [collectedAnswers, setCollectedAnswers] = useState([]);
+  const [revealAnswer, setRevealAnswer] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
     const loadQuestions = async () => {
+      if (!token) {
+        setError('You must be logged in to start a quiz session.');
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        const data = await fetchQuizQuestions(10, difficulty, category);
-        setQuestions(data);
+        const data = await startQuizSession({
+          amount: 10,
+          difficulty,
+          category,
+          token,
+        });
+
+        setSessionId(data?.sessionId || null);
+        setQuestions(data?.questions || []);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -40,16 +57,7 @@ export default function QuestionsPage() {
       }
     };
     loadQuestions();
-  }, [category, difficulty]);
-
-  useEffect(() => {
-    if (questions.length > 0) {
-      const currentQ = questions[currentIndex];
-      const answers = [...currentQ.incorrect_answers, currentQ.correct_answer];
-      answers.sort(() => Math.random() - 0.5);
-      setShuffledAnswers(answers);
-    }
-  }, [questions, currentIndex]);
+  }, [category, difficulty, token]);
 
   useEffect(() => {
     if (isLoading || questions.length === 0 || error) return;
@@ -63,30 +71,54 @@ export default function QuestionsPage() {
   }, [isLoading, questions.length, error]);
 
   const handleAnswerClick = (answer) => {
-    setSelectedAnswer(answer);
-  };
-
-  const handleNextQuestion = () => {
-    const currentQ = questions[currentIndex];
-
-    // SPRAWDZANIE: Jeśli dobra odpowiedź, dodaj punkt
-    if (selectedAnswer === currentQ.correct_answer) {
-      setScore(prev => prev + 1);
+    if (revealAnswer) {
+      return;
     }
 
+    setSelectedAnswer(answer);
+    setRevealAnswer(true);
+  };
+
+  const handleNextQuestion = async () => {
+    const currentQ = questions[currentIndex];
+
+    if (!currentQ || !selectedAnswer) {
+      return;
+    }
+
+    const nextAnswers = [
+      ...collectedAnswers,
+      { resultId: currentQ.resultId, userAnswer: selectedAnswer },
+    ];
+
     if (currentIndex < questions.length - 1) {
+      setCollectedAnswers(nextAnswers);
       setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(null);
+      setRevealAnswer(false);
     } else {
-      // KONIEC GRY: Przenosimy do wyników i wysyłamy punkty w "state"
-      const finalScore = selectedAnswer === currentQ.correct_answer ? score + 1 : score;
-      navigate('/results', {
-        state: {
-          totalScore: finalScore,
-          maxQuestions: questions.length,
-          completionTimeSeconds: elapsedSeconds,
-        }
-      });
+      try {
+        setIsSubmitting(true);
+
+        const result = await finishQuizSession({
+          sessionId,
+          answers: nextAnswers,
+          token,
+        });
+
+        navigate('/results', {
+          state: {
+            totalScore: result?.score ?? 0,
+            maxQuestions: result?.totalQuestions ?? questions.length,
+            expGained: result?.expGained ?? 0,
+            completionTimeSeconds: elapsedSeconds,
+          }
+        });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -106,6 +138,8 @@ export default function QuestionsPage() {
     textMain: '#ffffff',
     textSec: '#b3b3b3',
     accent: '#7c4dff',
+    correct: '#2e7d32',
+    wrong: '#c62828',
     buttonDefault: '#333333',
     buttonSelected: '#7c4dff',
     buttonHover: '#444444'
@@ -201,8 +235,33 @@ export default function QuestionsPage() {
           gridTemplateColumns: '1fr 1fr',
           gap: '20px'
         }}>
-          {shuffledAnswers.map((answer, index) => {
+          {(currentQ.answers || []).map((answer, index) => {
             const isSelected = selectedAnswer === answer;
+            const isCorrect = revealAnswer && answer === currentQ.correctAnswer;
+            const isWrong = revealAnswer && isSelected && answer !== currentQ.correctAnswer;
+
+            let borderColor = 'transparent';
+            let bgColor = theme.buttonDefault;
+            let textColor = theme.textMain;
+            let fontWeight = 'normal';
+
+            if (isCorrect) {
+              borderColor = theme.correct;
+              bgColor = 'rgba(46, 125, 50, 0.18)';
+              textColor = theme.correct;
+              fontWeight = 'bold';
+            } else if (isWrong) {
+              borderColor = theme.wrong;
+              bgColor = 'rgba(198, 40, 40, 0.18)';
+              textColor = theme.wrong;
+              fontWeight = 'bold';
+            } else if (isSelected) {
+              borderColor = theme.accent;
+              bgColor = 'rgba(124, 77, 255, 0.15)';
+              textColor = theme.accent;
+              fontWeight = 'bold';
+            }
+
             return (
               <button
                 key={index}
@@ -210,12 +269,12 @@ export default function QuestionsPage() {
                 style={{
                   padding: '20px',
                   fontSize: '16px',
-                  border: isSelected ? `2px solid ${theme.accent}` : '2px solid transparent',
+                  border: `2px solid ${borderColor}`,
                   borderRadius: '12px',
-                  cursor: 'pointer',
-                  backgroundColor: isSelected ? 'rgba(124, 77, 255, 0.15)' : theme.buttonDefault,
-                  color: isSelected ? theme.accent : theme.textMain,
-                  fontWeight: isSelected ? 'bold' : 'normal',
+                  cursor: revealAnswer ? 'default' : 'pointer',
+                  backgroundColor: bgColor,
+                  color: textColor,
+                  fontWeight: fontWeight,
                   transition: 'all 0.2s ease',
                   outline: 'none'
                 }}
@@ -228,22 +287,24 @@ export default function QuestionsPage() {
 
       <button
         onClick={handleNextQuestion}
-        disabled={!selectedAnswer}
+        disabled={!selectedAnswer || isSubmitting}
         style={{
           marginTop: '40px',
           padding: '15px 45px',
           fontSize: '18px',
           fontWeight: 'bold',
-          backgroundColor: selectedAnswer ? theme.accent : '#222',
-          color: selectedAnswer ? 'white' : '#555',
+          backgroundColor: selectedAnswer && !isSubmitting ? theme.accent : '#222',
+          color: selectedAnswer && !isSubmitting ? 'white' : '#555',
           border: 'none',
           borderRadius: '30px',
-          cursor: selectedAnswer ? 'pointer' : 'not-allowed',
-          boxShadow: selectedAnswer ? `0 0 20px ${theme.accent}66` : 'none',
+          cursor: selectedAnswer && !isSubmitting ? 'pointer' : 'not-allowed',
+          boxShadow: selectedAnswer && !isSubmitting ? `0 0 20px ${theme.accent}66` : 'none',
           transition: 'all 0.3s ease'
         }}
       >
-        {currentIndex < questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
+        {isSubmitting
+          ? 'Saving...'
+          : (currentIndex < questions.length - 1 ? 'Next Question' : 'Finish Quiz')}
       </button>
     </div>
   );
