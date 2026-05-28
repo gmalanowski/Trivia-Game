@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { API_BASE_URL, STATIC_BASE_URL } from '../config';
+import { API_BASE_URL, STATIC_BASE_URL, joinPath } from '../config';
 
 export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([]);
@@ -12,7 +12,7 @@ export default function LeaderboardPage() {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch(`${API_BASE_URL}/leaderboard`);
+        const response = await fetch(joinPath(API_BASE_URL, "leaderboard"));
 
         if (!response.ok) {
           throw new Error(`Server error: ${response.status}`);
@@ -144,7 +144,7 @@ function PodiumStep({ player, place, height, color, theme }) {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '110px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '12px' }}>
         <img
-          src={player.avatarUrl ? `${STATIC_BASE_URL}/${player.avatarUrl}` : `https://ui-avatars.com/api/?name=${player.username}&background=random`}
+          src={player.avatarUrl ? joinPath(STATIC_BASE_URL, player.avatarUrl) : `https://ui-avatars.com/api/?name=${player.username}&background=random`}
           alt={player.username}
           style={{ width: '50px', height: '50px', borderRadius: '50%', marginBottom: '8px', border: `3px solid ${color}`, objectFit: 'cover' }}
         />

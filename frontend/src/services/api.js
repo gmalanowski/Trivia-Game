@@ -1,6 +1,6 @@
 // src/services/api.js
 
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, joinPath } from "../config";
 
 const buildAuthHeaders = (token) => {
   if (!token) {
@@ -39,7 +39,7 @@ export const fetchQuizQuestions = async (
     const categoryParam = category ? `&category=${category}` : "";
 
     // 3. Budujemy pełny adres URL
-    const url = `${API_BASE_URL}/questions?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
+    const url = `${joinPath(API_BASE_URL, "questions")}?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
 
     // 4. Wykonujemy JEDNO zapytanie pod właściwy adres
     const response = await fetch(url);
@@ -58,7 +58,7 @@ export const startQuizSession = async ({
 } = {}) => {
   try {
     const categoryParam = category ? `&category=${category}` : "";
-    const url = `${API_BASE_URL}/questions/start?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
+    const url = `${joinPath(API_BASE_URL, "questions", "start")}?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
 
     const response = await fetch(url, {
       method: "POST",
@@ -81,14 +81,17 @@ export const finishQuizSession = async ({ sessionId, answers, token }) => {
       throw new Error("Session ID is required.");
     }
 
-    const response = await fetch(`${API_BASE_URL}/questions/${sessionId}/finish`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...buildAuthHeaders(token),
+    const response = await fetch(
+      joinPath(API_BASE_URL, "questions", sessionId, "finish"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...buildAuthHeaders(token),
+        },
+        body: JSON.stringify({ answers }),
       },
-      body: JSON.stringify({ answers }),
-    });
+    );
 
     return await handleResponse(response);
   } catch (error) {
@@ -100,7 +103,7 @@ export const finishQuizSession = async ({ sessionId, answers, token }) => {
 // Funkcja do pobierania listy kategorii do dropdowna
 export const fetchCategories = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/categories`);
+    const response = await fetch(joinPath(API_BASE_URL, "categories"));
     if (!response.ok) throw new Error("Failed to fetch categories");
     return await response.json();
   } catch (error) {

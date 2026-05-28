@@ -19,30 +19,30 @@ if (!jwtSecret) {
 
 const app = new Hono<Env>();
 
-app.use('*', async (c, next) => {
-  c.set('jwtSecret', jwtSecret)
-  await next()
+app.use("*", async (c, next) => {
+  c.set("jwtSecret", jwtSecret);
+  await next();
 });
 app.use(logger());
-app.use("/api/*", cors());
+app.use("*", cors());
 app.use("*", withPrisma);
 
-
 // Serve static images (for user avatars)
-app.use("/static/*", serveStatic({
-  root: "./static",
-  rewriteRequestPath: (path) => path.replace(/^\/static/, ""),
-  onNotFound: (path, c) => {
-    console.log(`${path} is not found, you access ${c.req.path}`)
-  }
-}));
-
+app.use(
+  "/static/*",
+  serveStatic({
+    root: "./static",
+    rewriteRequestPath: (path) => path.replace(/^\/static/, ""),
+    onNotFound: (path, c) => {
+      console.log(`${path} is not found, you access ${c.req.path}`);
+    },
+  }),
+);
 
 // Public endpoints
 app.get("/health", (c) => {
   return c.json({ status: "ok" }, 200);
 });
-
 
 // Protected routes
 app.use("/api/v1/users/*", async (c, next) => {
@@ -59,7 +59,6 @@ app.use("/api/v1/questions/:sessionId/finish", async (c, next) => {
   const jwtMiddleware = jwt({ secret: jwtSecret, alg: "HS256" });
   return jwtMiddleware(c, next);
 });
-
 
 // Mounted endpoints
 app.route("/api/v1/auth", auth);
