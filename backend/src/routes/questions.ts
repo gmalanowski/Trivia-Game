@@ -172,6 +172,7 @@ questions.post("/start", async (c) => {
       return {
         ...rest,
         resultId: dbResult?.id,
+        correctAnswer: q.correct_answer,
         answers: shuffleArray(combinedAnswers)
       };
     });

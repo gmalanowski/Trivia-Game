@@ -7,6 +7,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
 
   const theme = {
     background: '#121212',
@@ -25,7 +26,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/login` || 'http://localhost:3000/api/v1/auth/login', {
+      const response = await fetch(`${BACKEND_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -132,7 +133,7 @@ export default function LoginPage() {
             onMouseOver={(e) => !isLoading && (e.target.style.backgroundColor = theme.accentHover)}
             onMouseOut={(e) => !isLoading && (e.target.style.backgroundColor = theme.accent)}
           >
-            {isLoading ? 'Logowanie...' : 'Zaloguj się'}
+            {isLoading ? 'Logging in...' : 'Login'}
           </button>
         </form>
       </div>
