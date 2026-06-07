@@ -1,10 +1,54 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { unlink } from "node:fs/promises";
-import { calculateTitle, changePasswordSchema, updateUserSchema, userParamsSchema, type UserProfileResponse } from "../lib/users_lib";
+import { calculateTitle, changePasswordSchema, historyQuerySchema, updateUserSchema, userParamsSchema, type UserProfileResponse } from "../lib/users_lib";
 import type { Env } from "../types";
 
 const users = new Hono<Env>();
+
+// Get user quiz history
+users.get("/me/history", zValidator("query", historyQuerySchema), async (c) => {
+  const prisma = c.var.prisma;
+  const userId = c.var.jwtPayload.sub;
+  const { page, limit } = c.req.valid("query");
+
+  const skip = (page - 1) * limit;
+
+  try {
+    const [history, total] = await Promise.all([
+      prisma.quizSession.findMany({
+        where: { userId },
+        orderBy: { startedAt: 'desc' },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          status: true,
+          score: true,
+          totalQuestions: true,
+          category: true,
+          difficulty: true,
+          startedAt: true,
+          endedAt: true,
+        }
+      }),
+      prisma.quizSession.count({ where: { userId } })
+    ]);
+
+    return c.json({
+      data: history,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    }, 200);
+  } catch (error) {
+    console.error("Failed to retrieve quiz history:", error);
+    return c.json({ error: "Failed to retrieve quiz history" }, 500);
+  }
+});
 
 // Get user profile
 users.get("/:username", zValidator("param", userParamsSchema), async (c) => {

@@ -19,6 +19,11 @@ export const userParamsSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores allowed"),
 });
 
+export const historyQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional().default(1),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(10),
+});
+
 export const updateUserSchema = z.object({
   bio: z.string().max(500, "Bio cannot exceed 500 characters").optional(),
   username: z.string()
