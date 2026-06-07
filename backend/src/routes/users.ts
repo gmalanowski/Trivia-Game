@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { unlink } from "node:fs/promises";
-import { calculateTitle, changePasswordSchema, updateUserSchema, userParamsSchema, UserProfileResponse } from "../lib/users_lib";
+import { calculateTitle, changePasswordSchema, updateUserSchema, userParamsSchema, type UserProfileResponse } from "../lib/users_lib";
 import type { Env } from "../types";
 
 const users = new Hono<Env>();

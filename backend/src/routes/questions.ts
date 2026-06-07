@@ -1,10 +1,10 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { Difficulty } from "../generated/prisma/enums";
+import type { Difficulty } from "../generated/prisma/enums";
 import type { FetchQuestionsOptions } from "../lib/opentdb";
 import { fetchQuestions, OpenTDBError } from "../lib/opentdb";
 import { finishQuizSchema, shuffleArray } from "../lib/questions_lib";
-import { Env } from "../types";
+import type { Env } from "../types";
 
 const questions = new Hono<Env>();
 
@@ -117,7 +117,7 @@ questions.post("/start", async (c) => {
     }
   }
 
-  let prismaDifficulty: Difficulty | undefined = undefined;
+  let prismaDifficulty: Difficulty | undefined ;
 
   if (
     difficultyParam === "easy" ||
@@ -141,7 +141,7 @@ questions.post("/start", async (c) => {
       data: {
         userId: userId,
         totalQuestions: amount,
-        category: readableCategory, 
+        category: readableCategory,
         difficulty: prismaDifficulty,
       },
     });
@@ -160,29 +160,31 @@ questions.post("/start", async (c) => {
 
     const savedResults = await prisma.quizResult.findMany({
       where: { sessionId: session.id },
-      select: { id: true, questionText: true }
+      select: { id: true, questionText: true },
     });
 
     const formattedQuestions = data.map((q) => {
       const combinedAnswers = [q.correct_answer, ...q.incorrect_answers];
-      const dbResult = savedResults.find(r => r.questionText === q.question);
+      const dbResult = savedResults.find((r) => r.questionText === q.question);
 
       const { correct_answer, incorrect_answers, ...rest } = q;
 
       return {
         ...rest,
         resultId: dbResult?.id,
-        correctAnswer: q.correct_answer,
-        answers: shuffleArray(combinedAnswers)
+        correctAnswer: correct_answer,
+        answers: shuffleArray(combinedAnswers),
       };
     });
 
-    return c.json({
+    return c.json(
+      {
         sessionId: session.id,
         sessionStatus: session.status,
-        questions: formattedQuestions 
-    }, 200);
-
+        questions: formattedQuestions,
+      },
+      200,
+    );
   } catch (error) {
     if (error instanceof OpenTDBError) {
       let httpStatus: 200 | 400 | 401 | 404 | 409 | 429 | 500 = 400;
@@ -219,89 +221,101 @@ questions.post("/start", async (c) => {
 });
 
 // Finish a QuizSession and award EXP
-questions.post("/:sessionId/finish", zValidator("json", finishQuizSchema), async (c) => {
-  const prisma = c.var.prisma;
-  const userId = c.var.jwtPayload.sub;
-  const sessionId = c.req.param("sessionId");
-  const { answers } = c.req.valid("json");
+questions.post(
+  "/:sessionId/finish",
+  zValidator("json", finishQuizSchema),
+  async (c) => {
+    const prisma = c.var.prisma;
+    const userId = c.var.jwtPayload.sub;
+    const sessionId = c.req.param("sessionId");
+    const { answers } = c.req.valid("json");
 
-  try {
-    const session = await prisma.quizSession.findUnique({
-      where: { id: sessionId },
-      include: { results: true },
-    });
-
-    if (!session) {
-      return c.json({ error: "Quiz session not found." }, 404);
-    }
-
-    if (session.userId !== userId) {
-      return c.json({ error: "Unauthorized access to this session." }, 403);
-    }
-
-    if (session.status !== "IN_PROGRESS") {
-      return c.json({ error: `Cannot finish. Session is already ${session.status.toLowerCase()}.` }, 400);
-    }
-
-    let finalScore = 0;
-    const updateOperations = [];
-
-    for (const submittedAnswer of answers) {
-      const dbRecord = session.results.find(r => r.id === submittedAnswer.resultId);
-  
-      if (!dbRecord) {
-        continue;
-      }
-
-      const isCorrect = submittedAnswer.userAnswer === dbRecord.correctAnswer;
-
-      if (isCorrect) {
-        finalScore++;
-      }
-
-      updateOperations.push(
-        prisma.quizResult.update({
-          where: { id: dbRecord.id },
-          data: {
-            userAnswer: submittedAnswer.userAnswer || null,
-            isCorrect: isCorrect
-          }
-        })
-      );
-    }
-
-    const expGained = finalScore;
-
-    await prisma.$transaction([
-      ...updateOperations,
-        
-      prisma.quizSession.update({
+    try {
+      const session = await prisma.quizSession.findUnique({
         where: { id: sessionId },
-        data: {
-          status: "COMPLETED",
-          score: finalScore,
-          endedAt: new Date(),
-        },
-      }),
-        
-      prisma.user.update({
-        where: { id: userId },
-        data: {
-          exp: { increment: expGained },
-        },
-      }),
-    ]);
+        include: { results: true },
+      });
 
-    return c.json({
-      message: "Quiz completed successfully!",
-      score: finalScore,
-      totalQuestions: session.totalQuestions,
-      expGained: expGained,
-    }, 200);
-  } catch (error) {
-    console.error("Failed to finish quiz session:", error);
-    return c.json({ error: "Failed to grade and save results." }, 500);
-  }
-});
+      if (!session) {
+        return c.json({ error: "Quiz session not found." }, 404);
+      }
+
+      if (session.userId !== userId) {
+        return c.json({ error: "Unauthorized access to this session." }, 403);
+      }
+
+      if (session.status !== "IN_PROGRESS") {
+        return c.json(
+          {
+            error: `Cannot finish. Session is already ${session.status.toLowerCase()}.`,
+          },
+          400,
+        );
+      }
+
+      let finalScore = 0;
+      const updateOperations = [];
+
+      for (const submittedAnswer of answers) {
+        const dbRecord = session.results.find((r) => r.id === submittedAnswer.resultId);
+
+        if (!dbRecord) {
+          continue;
+        }
+
+        const isCorrect = submittedAnswer.userAnswer === dbRecord.correctAnswer;
+
+        if (isCorrect) {
+          finalScore++;
+        }
+
+        updateOperations.push(
+          prisma.quizResult.update({
+            where: { id: dbRecord.id },
+            data: {
+              userAnswer: submittedAnswer.userAnswer || null,
+              isCorrect: isCorrect,
+            },
+          }),
+        );
+      }
+
+      const expGained = finalScore;
+
+      await prisma.$transaction([
+        ...updateOperations,
+
+        prisma.quizSession.update({
+          where: { id: sessionId },
+          data: {
+            status: "COMPLETED",
+            score: finalScore,
+            endedAt: new Date(),
+          },
+        }),
+
+        prisma.user.update({
+          where: { id: userId },
+          data: {
+            exp: { increment: expGained },
+          },
+        }),
+      ]);
+
+      return c.json(
+        {
+          message: "Quiz completed successfully!",
+          score: finalScore,
+          totalQuestions: session.totalQuestions,
+          expGained: expGained,
+        },
+        200,
+      );
+    } catch (error) {
+      console.error("Failed to finish quiz session:", error);
+      return c.json({ error: "Failed to grade and save results." }, 500);
+    }
+  },
+);
 
 export default questions;

@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { sign } from "hono/jwt";
-import { AuthError, AuthResponse, loginSchema, registerSchema } from "../lib/auth_lib";
+import { type AuthError, type AuthResponse, loginSchema, registerSchema } from "../lib/auth_lib";
 import type { Env } from "../types";
 
 const auth = new Hono<Env>();

@@ -1,6 +1,6 @@
 // src/services/api.js
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+import { API_BASE_URL, joinPath } from "../config";
 
 const buildAuthHeaders = (token) => {
   if (!token) {
@@ -29,38 +29,41 @@ const handleResponse = async (response) => {
 };
 
 // 1. Dodaliśmy 'category' jako trzeci argument
-export const fetchQuizQuestions = async (amount = 10, difficulty = 'medium', category = '') => {
+export const fetchQuizQuestions = async (
+  amount = 10,
+  difficulty = "medium",
+  category = "",
+) => {
   try {
     // 2. Budujemy parametr kategorii tylko jeśli została wybrana
-    const categoryParam = category ? `&category=${category}` : '';
-    
+    const categoryParam = category ? `&category=${category}` : "";
+
     // 3. Budujemy pełny adres URL
-    const url = `${BACKEND_URL}/questions?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
-    
+    const url = `${joinPath(API_BASE_URL, "questions")}?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
+
     // 4. Wykonujemy JEDNO zapytanie pod właściwy adres
     const response = await fetch(url);
     return await handleResponse(response);
-    
   } catch (error) {
     console.error("Error while fetching questions from backend:", error);
-    throw error; 
+    throw error;
   }
 };
 
 export const startQuizSession = async ({
   amount = 10,
-  difficulty = 'medium',
-  category = '',
+  difficulty = "medium",
+  category = "",
   token,
 } = {}) => {
   try {
-    const categoryParam = category ? `&category=${category}` : '';
-    const url = `${BACKEND_URL}/questions/start?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
+    const categoryParam = category ? `&category=${category}` : "";
+    const url = `${joinPath(API_BASE_URL, "questions", "start")}?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
 
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...buildAuthHeaders(token),
       },
     });
@@ -75,17 +78,20 @@ export const startQuizSession = async ({
 export const finishQuizSession = async ({ sessionId, answers, token }) => {
   try {
     if (!sessionId) {
-      throw new Error('Session ID is required.');
+      throw new Error("Session ID is required.");
     }
 
-    const response = await fetch(`${BACKEND_URL}/questions/${sessionId}/finish`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...buildAuthHeaders(token),
+    const response = await fetch(
+      joinPath(API_BASE_URL, "questions", sessionId, "finish"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...buildAuthHeaders(token),
+        },
+        body: JSON.stringify({ answers }),
       },
-      body: JSON.stringify({ answers }),
-    });
+    );
 
     return await handleResponse(response);
   } catch (error) {
@@ -97,8 +103,8 @@ export const finishQuizSession = async ({ sessionId, answers, token }) => {
 // Funkcja do pobierania listy kategorii do dropdowna
 export const fetchCategories = async () => {
   try {
-    const response = await fetch(`${BACKEND_URL}/categories`);
-    if (!response.ok) throw new Error('Failed to fetch categories');
+    const response = await fetch(joinPath(API_BASE_URL, "categories"));
+    if (!response.ok) throw new Error("Failed to fetch categories");
     return await response.json();
   } catch (error) {
     console.error("Category fetch error:", error);

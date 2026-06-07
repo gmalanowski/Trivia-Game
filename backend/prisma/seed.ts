@@ -1,5 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Difficulty, type Prisma, PrismaClient, SessionStatus } from "../src/generated/prisma/client.js";
+import { type Difficulty, type Prisma, PrismaClient, type SessionStatus } from "../src/generated/prisma/client.js";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is missing");

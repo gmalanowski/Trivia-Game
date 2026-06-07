@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
+import { API_BASE_URL, STATIC_BASE_URL, joinPath } from '../config';
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
-  const API_ORIGIN = API_BASE.replace(/\/api\/v1$/, '');
 
   const token = localStorage.getItem('token');
   const storedUsername = localStorage.getItem('username');
@@ -28,7 +27,7 @@ export default function ProfilePage() {
 
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`${API_BASE}/users/${storedUsername}`, {
+        const response = await fetch(joinPath(API_BASE_URL, "users", storedUsername), {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -78,7 +77,7 @@ export default function ProfilePage() {
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '25px', backgroundColor: theme.cardBg, padding: '30px', borderRadius: '16px', border: `1px solid ${theme.border}` }}>
           <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(124, 77, 255, 0.2)', border: `2px solid ${theme.accent}`, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '28px', color: theme.accent }}>
-            {user.avatarUrl ? <img src={`${API_ORIGIN}/static/${user.avatarUrl}`} alt="Avatar" style={{ width: '100%', borderRadius: '50%' }} /> : user.username[0].toUpperCase()}
+            {user.avatarUrl ? <img src={joinPath(STATIC_BASE_URL, user.avatarUrl)} alt="Avatar" style={{ width: '100%', borderRadius: '50%' }} /> : user.username[0].toUpperCase()}
           </div>
           <div>
             <h1 style={{ margin: 0 }}>{user.username}</h1>
