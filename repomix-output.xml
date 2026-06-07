@@ -1,0 +1,4621 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+backend/
+  prisma/
+    migrations/
+      20260414112634_init/
+        migration.sql
+      20260526195621_add_extra_user_fields/
+        migration.sql
+      migration_lock.toml
+    schema.prisma
+    seed.ts
+  src/
+    lib/
+      auth_lib.ts
+      opentdb.test.ts
+      opentdb.ts
+      prisma.ts
+      questions_lib.ts
+      users_lib.ts
+    routes/
+      auth.test.ts
+      auth.ts
+      categories.ts
+      leaderboard.ts
+      questions.test.ts
+      questions.ts
+      users.test.ts
+      users.ts
+    index.ts
+    serialize_db.ts
+    types.ts
+  .gitignore
+  biome.json
+  example_db_dump.json
+  package.json
+  prisma.config.ts
+  README.md
+  tsconfig.json
+docs/
+  .gitignore
+  database_schema.md
+  documentation.pdf
+  git-workflow.md
+frontend/
+  public/
+    favicon.svg
+    icons.svg
+  src/
+    assets/
+      hero.png
+      react.svg
+      vite.svg
+    components/
+      .gitkeep
+      Header.jsx
+    pages/
+      .gitkeep
+      LeaderboardPage.jsx
+      LoginPage.jsx
+      ProfilePage.jsx
+      QuestionsPage.jsx
+      QuizConfigPage.jsx
+      ResultsPage.jsx
+      StartPage.jsx
+    services/
+      .gitkeep
+      api.js
+    App.css
+    App.jsx
+    config.js
+    index.css
+    main.jsx
+  .gitignore
+  eslint.config.js
+  index.html
+  package.json
+  README.md
+  vite.config.js
+.env.example
+.gitignore
+biome.json
+docker-compose.yml
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="backend/prisma/migrations/20260414112634_init/migration.sql">
+-- CreateEnum
+CREATE TYPE "SessionStatus" AS ENUM ('IN_PROGRESS', 'COMPLETED', 'ABANDONED');
+
+-- CreateEnum
+CREATE TYPE "Difficulty" AS ENUM ('EASY', 'MEDIUM', 'HARD');
+
+-- CreateTable
+CREATE TABLE "User" (
+    "id" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "username" TEXT NOT NULL,
+    "passwordHash" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QuizSession" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "status" "SessionStatus" NOT NULL DEFAULT 'IN_PROGRESS',
+    "score" INTEGER NOT NULL DEFAULT 0,
+    "totalQuestions" INTEGER NOT NULL,
+    "category" TEXT,
+    "difficulty" "Difficulty",
+    "startedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "endedAt" TIMESTAMP(3),
+
+    CONSTRAINT "QuizSession_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "QuizResult" (
+    "id" TEXT NOT NULL,
+    "sessionId" TEXT NOT NULL,
+    "questionText" TEXT NOT NULL,
+    "userAnswer" TEXT,
+    "correctAnswer" TEXT NOT NULL,
+    "isCorrect" BOOLEAN NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "QuizResult_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+
+-- CreateIndex
+CREATE INDEX "QuizSession_userId_idx" ON "QuizSession"("userId");
+
+-- CreateIndex
+CREATE INDEX "QuizResult_sessionId_idx" ON "QuizResult"("sessionId");
+
+-- AddForeignKey
+ALTER TABLE "QuizSession" ADD CONSTRAINT "QuizSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "QuizResult" ADD CONSTRAINT "QuizResult_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "QuizSession"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="backend/prisma/migrations/20260526195621_add_extra_user_fields/migration.sql">
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "avatarUrl" TEXT,
+ADD COLUMN     "bio" TEXT,
+ADD COLUMN     "exp" INTEGER NOT NULL DEFAULT 0;
+</file>
+
+<file path="backend/prisma/migrations/migration_lock.toml">
+# Please do not edit this file manually
+# It should be added in your version-control system (e.g., Git)
+provider = "postgresql"
+</file>
+
+<file path="backend/src/lib/questions_lib.ts">
+import { z } from "zod";
+
+// Fisher-Yates shuffle algorithm for answer randomizing
+export function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+  }
+  return shuffled;
+}
+
+const answerSchema = z.object({
+  resultId: z.uuid("Invalid result ID format"),
+  userAnswer: z.string().nullable().optional(), 
+});
+
+export const finishQuizSchema = z.object({
+  answers: z.array(answerSchema).min(1, "At least one answer must be submitted"),
+});
+</file>
+
+<file path="backend/src/routes/auth.test.ts">
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { Hono } from "hono";
+import auth from "./auth";
+
+const mockPrisma = {
+  user: {
+    findUnique: mock(),
+    findFirst: mock(),
+    create: mock(),
+  },
+};
+
+const createTestApp = () => {
+  const app = new Hono<any>();
+  
+  app.use("*", async (c, next) => {
+    c.set("prisma", mockPrisma);
+    c.set("jwtSecret", "test-super-secret-key");
+    await next();
+  });
+
+  app.route("/auth", auth);
+  
+  return app;
+};
+
+describe("Auth Routes", () => {
+  let app: Hono<any>;
+
+  beforeEach(() => {
+    app = createTestApp();
+    
+    mockPrisma.user.findUnique.mockReset();
+    mockPrisma.user.findFirst.mockReset();
+    mockPrisma.user.create.mockReset();
+    
+    Bun.password.verify = mock();
+    Bun.password.hash = mock();
+  });
+
+  describe("POST /register", () => {
+    const validRegisterPayload = {
+      username: "testuser",
+      email: "test@example.com",
+      password: "securepassword123!",
+    };
+
+    it("should return 400 if Zod validation fails", async () => {
+      const res = await app.request("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...validRegisterPayload, password: "short" }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 409 if email is already in use", async () => {
+      mockPrisma.user.findUnique.mockResolvedValueOnce({ id: "user-1", email: validRegisterPayload.email });
+
+      const res = await app.request("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validRegisterPayload),
+      });
+
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: "Email is already in use" });
+    });
+
+    it("should return 409 if username is already in use", async () => {
+      mockPrisma.user.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: "user-2", username: validRegisterPayload.username });
+
+      const res = await app.request("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validRegisterPayload),
+      });
+
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: "Username is already in use" });
+    });
+
+    it("should successfully register a new user and return a JWT", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      (Bun.password.hash as any).mockResolvedValue("hashed_password_123");
+      
+      const createdUser = {
+        id: "new-user-id",
+        email: validRegisterPayload.email,
+        username: validRegisterPayload.username,
+        passwordHash: "hashed_password_123"
+      };
+      mockPrisma.user.create.mockResolvedValue(createdUser);
+
+      const res = await app.request("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validRegisterPayload),
+      });
+
+      expect(res.status).toBe(201);
+      
+      const body = await res.json();
+      expect(body.message).toBe("User registered successfully");
+      expect(body.token).toBeTypeOf("string");
+      expect(body.user).toEqual({
+        id: createdUser.id,
+        email: createdUser.email,
+        username: createdUser.username
+      });
+      
+      expect(Bun.password.hash).toHaveBeenCalledWith(validRegisterPayload.password);
+    });
+  });
+
+  describe("POST /login", () => {
+    const validLoginPayload = {
+      identifier: "testuser",
+      password: "securepassword123!",
+    };
+
+    it("should return 400 if Zod validation fails", async () => {
+      const res = await app.request("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: "testuser" }),
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("should return 401 if user is not found", async () => {
+      mockPrisma.user.findFirst.mockResolvedValue(null);
+
+      const res = await app.request("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validLoginPayload),
+      });
+
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: "User not found" });
+    });
+
+    it("should return 401 if trying to login to an OAuth account using a password", async () => {
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: "oauth-user",
+        email: "oauth@example.com",
+        username: "oauthuser",
+        passwordHash: null
+      });
+
+      const res = await app.request("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validLoginPayload),
+      });
+
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: "Invalid credentials" });
+    });
+
+    it("should return 401 if the password does not match", async () => {
+      mockPrisma.user.findFirst.mockResolvedValue({
+        id: "user-1",
+        passwordHash: "correct_hash"
+      });
+      (Bun.password.verify as any).mockResolvedValue(false);
+
+      const res = await app.request("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validLoginPayload),
+      });
+
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: "Invalid credentials" });
+    });
+
+    it("should successfully log in and return a JWT", async () => {
+      const dbUser = {
+        id: "user-1",
+        email: "test@example.com",
+        username: "testuser",
+        passwordHash: "correct_hash"
+      };
+      
+      mockPrisma.user.findFirst.mockResolvedValue(dbUser);
+      (Bun.password.verify as any).mockResolvedValue(true);
+
+      const res = await app.request("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(validLoginPayload),
+      });
+
+      expect(res.status).toBe(200);
+      
+      const body = await res.json();
+      expect(body.message).toBe("Login successful");
+      expect(body.token).toBeTypeOf("string");
+      expect(body.user).toEqual({
+        id: dbUser.id,
+        email: dbUser.email,
+        username: dbUser.username
+      });
+      
+      expect(mockPrisma.user.findFirst).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { email: validLoginPayload.identifier },
+            { username: validLoginPayload.identifier }
+          ]
+        }
+      });
+    });
+  });
+});
+</file>
+
+<file path="backend/src/routes/categories.ts">
+import { Hono } from "hono";
+import { fetchCategories } from "../lib/opentdb";
+
+const categories = new Hono();
+
+categories.get("/", async (c) => {
+  try {
+    const data = await fetchCategories();
+    return c.json(data, 200);
+  } catch (error) {
+    console.error("OpenTDB Categories API Error:", error);
+    return c.json(
+      { error: "An unexpected error occurred while fetching categories." },
+      500,
+    );
+  }
+});
+
+export default categories;
+</file>
+
+<file path="backend/src/routes/questions.test.ts">
+import { describe, expect, test } from "bun:test";
+import app from "../index";
+
+describe("Questions API Endpoint", () => {
+  test("GET /questions returns default 10 questions", async () => {
+    const req = new Request("http://localhost/api/v1/questions");
+    const res = await app.request(req);
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json).toBeArray();
+    expect(json.length).toBe(10);
+    expect(json[0].question).toBeDefined();
+  }, 10000);
+
+  test("GET /questions with query parameters", async () => {
+    // Wait 6 seconds to avoid OpenTDB rate-limit after previous test
+    await new Promise((r) => setTimeout(r, 6000));
+
+    const req = new Request(
+      "http://localhost/api/v1/questions?amount=2&difficulty=easy&type=boolean",
+    );
+    const res = await app.request(req);
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json).toBeArray();
+    expect(json.length).toBe(2);
+    expect(json[0].difficulty).toBe("easy");
+    expect(json[0].type).toBe("boolean");
+  }, 15000);
+
+  test("GET /questions with invalid amount returns 400", async () => {
+    const req = new Request("http://localhost/api/v1/questions?amount=60"); // Max amount is 50
+    const res = await app.request(req);
+    expect(res.status).toBe(400);
+
+    const json = await res.json();
+    expect(json).toHaveProperty("error");
+    expect(json.error).toContain("Invalid amount parameter");
+  });
+
+  test("GET /questions returning No Results maps to 404", async () => {
+    await new Promise((r) => setTimeout(r, 6000));
+    const req = new Request(
+      "http://localhost/api/v1/questions?amount=50&category=30&difficulty=hard&type=boolean",
+    );
+    const res = await app.request(req);
+    expect(res.status).toBe(404);
+
+    const json = await res.json();
+    expect(json).toHaveProperty("error");
+    expect(json).toHaveProperty("code", 1);
+  }, 15000);
+});
+</file>
+
+<file path="backend/src/routes/users.test.ts">
+import { beforeEach, describe, expect, it, mock, spyOn } from "bun:test";
+import { Hono } from "hono";
+import * as fsPromises from "node:fs/promises";
+import users from "./users";
+
+const mockPrisma = {
+  user: {
+    findUnique: mock(),
+    update: mock(),
+    delete: mock(),
+  },
+};
+
+const createTestApp = (userId = "user-123") => {
+  const app = new Hono<any>();
+  
+  app.use("*", async (c, next) => {
+    c.set("prisma", mockPrisma);
+    c.set("jwtPayload", { sub: userId });
+    await next();
+  });
+
+  app.route("/users", users);
+  
+  return app;
+};
+
+describe("Users Routes", () => {
+  let app: Hono<any>;
+
+  beforeEach(() => {
+    app = createTestApp();
+    
+    mockPrisma.user.findUnique.mockReset();
+    mockPrisma.user.update.mockReset();
+    mockPrisma.user.delete.mockReset();
+    
+    Bun.password.verify = mock();
+    Bun.password.hash = mock();
+  });
+
+  describe("GET /:username", () => {
+    it("should return 404 if user is not found", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      const res = await app.request("/users/johndoe");
+      expect(res.status).toBe(404);
+      expect(await res.json()).toEqual({ error: "User not found" });
+    });
+
+    it("should return 400 for invalid username format (Zod validation)", async () => {
+      // Username less than 3 chars
+      const res = await app.request("/users/ab"); 
+      expect(res.status).toBe(400);
+    });
+
+    it("should return user profile successfully", async () => {
+      const mockUser = {
+        id: "user-123",
+        username: "johndoe",
+        bio: "Hello world",
+        avatarUrl: "avatar.png",
+        title: "Developer",
+        passwordHash: "hidden"
+      };
+      
+      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+
+      const res = await app.request("/users/johndoe");
+      expect(res.status).toBe(200);
+      
+      const body = await res.json();
+      expect(body.message).toBe("Profile retrieved successfully");
+      expect(body.user).toEqual({
+        id: mockUser.id,
+        username: mockUser.username,
+        bio: mockUser.bio,
+        avatarUrl: mockUser.avatarUrl,
+        title: mockUser.title
+      });
+      expect(body.user.passwordHash).toBeUndefined();
+    });
+  });
+
+  describe("PATCH /me", () => {
+    it("should update and return the user profile", async () => {
+      const updateData = { bio: "New bio", username: "new_johndoe" };
+      
+      mockPrisma.user.findUnique.mockResolvedValue(null); 
+      mockPrisma.user.update.mockResolvedValue({ id: "user-123", ...updateData });
+
+      const res = await app.request("/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+
+      expect(res.status).toBe(200);
+      const body = await res.json();
+      expect(body.message).toBe("Profile updated successfully");
+      expect(body.user.bio).toBe("New bio");
+    });
+
+    it("should return 409 if new username is already taken", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: "another-user-id", username: "taken_name" });
+
+      const res = await app.request("/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "taken_name" }),
+      });
+
+      expect(res.status).toBe(409);
+      expect(await res.json()).toEqual({ error: "Username is already taken" });
+    });
+
+    it("should return 500 if DB update fails", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.update.mockRejectedValue(new Error("DB Error"));
+
+      const res = await app.request("/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bio: "Failing bio" }),
+      });
+
+      expect(res.status).toBe(500);
+      expect(await res.json()).toEqual({ error: "Failed to update profile" });
+    });
+  });
+
+  describe("PATCH /me/password", () => {
+    const payload = {
+      currentPassword: "oldpassword",
+      newPassword: "newpassword123!"
+    };
+
+    it("should return 404 if user not found", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      const res = await app.request("/users/me/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      expect(res.status).toBe(404);
+    });
+
+    it("should return 400 if user has no passwordHash (OAuth)", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ passwordHash: null });
+
+      const res = await app.request("/users/me/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: "Cannot change password for OAuth account" });
+    });
+
+    it("should return 401 if current password does not match", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ passwordHash: "hashed_old" });
+      (Bun.password.verify as any).mockResolvedValue(false);
+
+      const res = await app.request("/users/me/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      expect(res.status).toBe(401);
+      expect(await res.json()).toEqual({ error: "Incorrect current password" });
+    });
+
+    it("should successfully update password", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ passwordHash: "hashed_old" });
+      (Bun.password.verify as any).mockResolvedValue(true);
+      (Bun.password.hash as any).mockResolvedValue("hashed_new");
+      mockPrisma.user.update.mockResolvedValue({});
+
+      const res = await app.request("/users/me/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      expect(res.status).toBe(200);
+      expect(mockPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: "user-123" },
+        data: { passwordHash: "hashed_new" }
+      });
+    });
+  });
+
+  describe("DELETE /me", () => {
+    let unlinkSpy: any;
+
+    beforeEach(() => {
+      unlinkSpy = spyOn(fsPromises, "unlink").mockResolvedValue(undefined);
+    });
+
+    it("should return 404 if user not found", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(null);
+
+      const res = await app.request("/users/me", { method: "DELETE" });
+      expect(res.status).toBe(404);
+    });
+
+    it("should delete user and not call unlink if no avatarUrl exists", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ avatarUrl: null });
+      mockPrisma.user.delete.mockResolvedValue({});
+
+      const res = await app.request("/users/me", { method: "DELETE" });
+
+      expect(res.status).toBe(200);
+      expect(mockPrisma.user.delete).toHaveBeenCalledWith({ where: { id: "user-123" } });
+      expect(unlinkSpy).not.toHaveBeenCalled();
+    });
+
+    it("should delete user and call unlink if avatarUrl exists", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ avatarUrl: "test-avatar.jpg" });
+      mockPrisma.user.delete.mockResolvedValue({});
+
+      const res = await app.request("/users/me", { method: "DELETE" });
+
+      expect(res.status).toBe(200);
+      expect(unlinkSpy).toHaveBeenCalledWith("static/test-avatar.jpg");
+    });
+
+    it("should return 500 if deletion throws an error", async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ avatarUrl: null });
+      mockPrisma.user.delete.mockRejectedValue(new Error("DB Failure"));
+
+      const res = await app.request("/users/me", { method: "DELETE" });
+
+      expect(res.status).toBe(500);
+    });
+  });
+});
+</file>
+
+<file path="backend/src/serialize_db.ts">
+//
+// Additional script to serialize the database
+// into JSON format
+//
+
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "./generated/prisma/client.js";
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is missing");
+}
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const prisma = new PrismaClient({
+  adapter,
+});
+
+async function main() {
+  const users = await prisma.user.findMany({
+    include: {
+      sessions: {
+        include: {
+          results: true,
+        },
+      },
+    },
+  });
+
+  await Bun.write("db_dump.json", JSON.stringify(users, null, 2));
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+</file>
+
+<file path="backend/example_db_dump.json">
+[
+  {
+    "id": "c3ba197f-dfcb-4704-87a3-33b7e8818077",
+    "email": "alice@prisma.io",
+    "username": "alice",
+    "passwordHash": "$2a$12$4P261CVY4ym4Qn6U47h7t.sORrhhqlH53KMiVG5joAGEIkZQgXuIC",
+    "createdAt": "2026-04-14T19:46:47.631Z",
+    "updatedAt": "2026-04-14T19:46:47.631Z",
+    "sessions": [
+      {
+        "id": "7ab86f17-c05d-4c1c-9e1d-012fc2fc7850",
+        "userId": "c3ba197f-dfcb-4704-87a3-33b7e8818077",
+        "status": "COMPLETED",
+        "score": 1,
+        "totalQuestions": 2,
+        "category": "Science",
+        "difficulty": "EASY",
+        "startedAt": "2026-04-14T19:46:47.631Z",
+        "endedAt": null,
+        "results": [
+          {
+            "id": "e25bd239-9634-4eaf-9ca4-b83504cbc95a",
+            "sessionId": "7ab86f17-c05d-4c1c-9e1d-012fc2fc7850",
+            "questionText": "What is H2O?",
+            "userAnswer": "Water",
+            "correctAnswer": "Water",
+            "isCorrect": true,
+            "createdAt": "2026-04-14T19:46:47.631Z"
+          },
+          {
+            "id": "859c669e-6daf-4b0b-9d8d-d7e3537dff4b",
+            "sessionId": "7ab86f17-c05d-4c1c-9e1d-012fc2fc7850",
+            "questionText": "What is the powerhouse of the cell?",
+            "userAnswer": "Nucleus",
+            "correctAnswer": "Mitochondria",
+            "isCorrect": false,
+            "createdAt": "2026-04-14T19:46:47.631Z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "c4893f85-cf84-46a9-8c99-2d874b091b16",
+    "email": "bob@prisma.io",
+    "username": "bob",
+    "passwordHash": null,
+    "createdAt": "2026-04-14T19:46:47.658Z",
+    "updatedAt": "2026-04-14T19:46:47.658Z",
+    "sessions": []
+  }
+]
+</file>
+
+<file path="docs/.gitignore">
+# =========================
+# OS & Editor Files
+# =========================
+.DS_Store
+Thumbs.db
+.idea/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+
+# environment variables
+.env
+.env.*
+!.env.example
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun.lockb.old
+
+# coverage
+coverage/
+
+# editor files
+.vscode/
+.idea/
+
+# system files
+.DS_Store
+Thumbs.db
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+</file>
+
+<file path="docs/git-workflow.md">
+\# Git Workflow
+
+
+
+This document defines the Git workflow used in the project.
+
+
+
+\## Main branch
+
+
+
+The repository uses one main branch:
+
+
+
+\* \*\*main\*\* – stable version of the project
+
+
+
+\## Feature branches
+
+
+
+All new work should be done in separate feature branches created from `main`.
+
+
+
+Branch naming convention:
+
+
+
+```text
+
+feature/<short-description>
+
+```
+
+
+
+Examples:
+
+
+
+\* `feature/backend-setup`
+
+\* `feature/react-start-screen`
+
+\* `feature/prisma-schema`
+
+
+
+\## Commit messages
+
+
+
+Commits should use task-related prefixes to make history easier to understand.
+
+
+
+Examples:
+
+
+
+\* `BE-01 setup backend project with Bun and Hono`
+
+\* `FE-02 create start screen`
+
+\* `DB-01 design database schema`
+
+\* `DOC-03 analyze existing solutions`
+
+\* `PM-02 configure git workflow`
+
+
+
+\## Pull Requests
+
+
+
+All changes must be merged through \*\*Pull Requests\*\*.
+
+
+
+Rules:
+
+
+
+\* changes should not be pushed directly to `main`
+
+\* work should be merged from feature branches
+
+\* each Pull Request should have a clear title and short description
+
+\* at least one reviewer is required before merging
+
+\* closing a PR may also close a related GitHub Issue
+
+
+
+\## Branch protection
+
+
+
+The `main` branch should be protected.
+
+
+
+Rules:
+
+
+
+\* require a pull request before merging
+
+\* require at least one approval
+
+\* prevent direct pushes to `main`
+
+
+
+\## General workflow
+
+
+
+1\. Create a new branch from `main`
+
+2\. Implement the assigned task
+
+3\. Commit changes with proper prefix
+
+4\. Push the branch to GitHub
+
+5\. Open a Pull Request
+
+6\. Request review
+
+7\. Merge after approval
+
+
+
+\## Task tracking
+
+
+
+Tasks are managed through:
+
+
+
+\* \*\*GitHub Issues\*\*
+
+\* \*\*GitHub Projects (Kanban board)\*\*
+
+\* \*\*Milestones\*\*
+
+
+
+Each task should be linked to an Issue whenever possible.
+
+
+
+\## Notes
+
+
+
+This workflow is intended to keep development organized, readable and consistent for the entire team.
+</file>
+
+<file path="frontend/public/favicon.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>
+</file>
+
+<file path="frontend/public/icons.svg">
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="bluesky-icon" viewBox="0 0 16 17">
+    <g clip-path="url(#bluesky-clip)"><path fill="#08060d" d="M7.75 7.735c-.693-1.348-2.58-3.86-4.334-5.097-1.68-1.187-2.32-.981-2.74-.79C.188 2.065.1 2.812.1 3.251s.241 3.602.398 4.13c.52 1.744 2.367 2.333 4.07 2.145-2.495.37-4.71 1.278-1.805 4.512 3.196 3.309 4.38-.71 4.987-2.746.608 2.036 1.307 5.91 4.93 2.746 2.72-2.746.747-4.143-1.747-4.512 1.702.189 3.55-.4 4.07-2.145.156-.528.397-3.691.397-4.13s-.088-1.186-.575-1.406c-.42-.19-1.06-.395-2.741.79-1.755 1.24-3.64 3.752-4.334 5.099"/></g>
+    <defs><clipPath id="bluesky-clip"><path fill="#fff" d="M.1.85h15.3v15.3H.1z"/></clipPath></defs>
+  </symbol>
+  <symbol id="discord-icon" viewBox="0 0 20 19">
+    <path fill="#08060d" d="M16.224 3.768a14.5 14.5 0 0 0-3.67-1.153c-.158.286-.343.67-.47.976a13.5 13.5 0 0 0-4.067 0c-.128-.306-.317-.69-.476-.976A14.4 14.4 0 0 0 3.868 3.77C1.546 7.28.916 10.703 1.231 14.077a14.7 14.7 0 0 0 4.5 2.306q.545-.748.965-1.587a9.5 9.5 0 0 1-1.518-.74q.191-.14.372-.293c2.927 1.369 6.107 1.369 8.999 0q.183.152.372.294-.723.437-1.52.74.418.838.963 1.588a14.6 14.6 0 0 0 4.504-2.308c.37-3.911-.63-7.302-2.644-10.309m-9.13 8.234c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.894 0 1.614.82 1.599 1.82.001 1-.705 1.82-1.6 1.82m5.91 0c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.893 0 1.614.82 1.599 1.82 0 1-.706 1.82-1.6 1.82"/>
+  </symbol>
+  <symbol id="documentation-icon" viewBox="0 0 21 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="m15.5 13.333 1.533 1.322c.645.555.967.833.967 1.178s-.322.623-.967 1.179L15.5 18.333m-3.333-5-1.534 1.322c-.644.555-.966.833-.966 1.178s.322.623.966 1.179l1.534 1.321"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M17.167 10.836v-4.32c0-1.41 0-2.117-.224-2.68-.359-.906-1.118-1.621-2.08-1.96-.599-.21-1.349-.21-2.848-.21-2.623 0-3.935 0-4.983.369-1.684.591-3.013 1.842-3.641 3.428C3 6.449 3 7.684 3 10.154v2.122c0 2.558 0 3.838.706 4.726q.306.383.713.671c.76.536 1.79.64 3.581.66"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M3 10a2.78 2.78 0 0 1 2.778-2.778c.555 0 1.209.097 1.748-.047.48-.129.854-.503.982-.982.145-.54.048-1.194.048-1.749a2.78 2.78 0 0 1 2.777-2.777"/>
+  </symbol>
+  <symbol id="github-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M9.356 1.85C5.05 1.85 1.57 5.356 1.57 9.694a7.84 7.84 0 0 0 5.324 7.44c.387.079.528-.168.528-.376 0-.182-.013-.805-.013-1.454-2.165.467-2.616-.935-2.616-.935-.349-.91-.864-1.143-.864-1.143-.71-.48.051-.48.051-.48.787.051 1.2.805 1.2.805.695 1.194 1.817.857 2.268.649.064-.507.27-.857.49-1.052-1.728-.182-3.545-.857-3.545-3.87 0-.857.31-1.558.8-2.104-.078-.195-.349-1 .077-2.078 0 0 .657-.208 2.14.805a7.5 7.5 0 0 1 1.946-.26c.657 0 1.328.092 1.946.26 1.483-1.013 2.14-.805 2.14-.805.426 1.078.155 1.883.078 2.078.502.546.799 1.247.799 2.104 0 3.013-1.818 3.675-3.558 3.87.284.247.528.714.528 1.454 0 1.052-.012 1.896-.012 2.156 0 .208.142.455.528.377a7.84 7.84 0 0 0 5.324-7.441c.013-4.338-3.48-7.844-7.773-7.844" clip-rule="evenodd"/>
+  </symbol>
+  <symbol id="social-icon" viewBox="0 0 20 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M12.5 6.667a4.167 4.167 0 1 0-8.334 0 4.167 4.167 0 0 0 8.334 0"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M2.5 16.667a5.833 5.833 0 0 1 8.75-5.053m3.837.474.513 1.035c.07.144.257.282.414.309l.93.155c.596.1.736.536.307.965l-.723.73a.64.64 0 0 0-.152.531l.207.903c.164.715-.213.991-.84.618l-.872-.52a.63.63 0 0 0-.577 0l-.872.52c-.624.373-1.003.094-.84-.618l.207-.903a.64.64 0 0 0-.152-.532l-.723-.729c-.426-.43-.289-.864.306-.964l.93-.156a.64.64 0 0 0 .412-.31l.513-1.034c.28-.562.735-.562 1.012 0"/>
+  </symbol>
+  <symbol id="x-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M1.893 1.98c.052.072 1.245 1.769 2.653 3.77l2.892 4.114c.183.261.333.48.333.486s-.068.089-.152.183l-.522.593-.765.867-3.597 4.087c-.375.426-.734.834-.798.905a1 1 0 0 0-.118.148c0 .01.236.017.664.017h.663l.729-.83c.4-.457.796-.906.879-.999a692 692 0 0 0 1.794-2.038c.034-.037.301-.34.594-.675l.551-.624.345-.392a7 7 0 0 1 .34-.374c.006 0 .93 1.306 2.052 2.903l2.084 2.965.045.063h2.275c1.87 0 2.273-.003 2.266-.021-.008-.02-1.098-1.572-3.894-5.547-2.013-2.862-2.28-3.246-2.273-3.266.008-.019.282-.332 2.085-2.38l2-2.274 1.567-1.782c.022-.028-.016-.03-.65-.03h-.674l-.3.342a871 871 0 0 1-1.782 2.025c-.067.075-.405.458-.75.852a100 100 0 0 1-.803.91c-.148.172-.299.344-.99 1.127-.304.343-.32.358-.345.327-.015-.019-.904-1.282-1.976-2.808L6.365 1.85H1.8zm1.782.91 8.078 11.294c.772 1.08 1.413 1.973 1.425 1.984.016.017.241.02 1.05.017l1.03-.004-2.694-3.766L7.796 5.75 5.722 2.852l-1.039-.004-1.039-.004z" clip-rule="evenodd"/>
+  </symbol>
+</svg>
+</file>
+
+<file path="frontend/src/assets/react.svg">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
+</file>
+
+<file path="frontend/src/assets/vite.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="77" height="47" fill="none" aria-labelledby="vite-logo-title" viewBox="0 0 77 47"><title id="vite-logo-title">Vite</title><style>.parenthesis{fill:#000}@media (prefers-color-scheme:dark){.parenthesis{fill:#fff}}</style><path fill="#9135ff" d="M40.151 45.71c-.663.844-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.493c-.92 0-1.457-1.04-.92-1.788l7.479-10.471c1.07-1.498 0-3.578-1.842-3.578H15.443c-.92 0-1.456-1.04-.92-1.788l9.696-13.576c.213-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.472c-1.07 1.497 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.087.89 1.83L40.153 45.712z"/><mask id="a" width="48" height="47" x="14" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M40.047 45.71c-.663.843-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.389c-.92 0-1.457-1.04-.92-1.788l7.479-10.472c1.07-1.497 0-3.578-1.842-3.578H15.34c-.92 0-1.456-1.04-.92-1.788l9.696-13.575c.213-.297.556-.474.92-.474H53.93c.92 0 1.456 1.04.92 1.788L47.37 13.03c-1.07 1.498 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.088.89 1.831L40.049 45.712z"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#eee6ff" rx="5.508" ry="14.704" transform="rotate(269.814 20.96 11.29)scale(-1 1)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#eee6ff" rx="10.399" ry="29.851" transform="rotate(89.814 -16.902 -8.275)scale(1 -1)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#8900ff" rx="5.508" ry="30.487" transform="rotate(89.814 -19.197 -7.127)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.928 4.177)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.738 5.52)scale(1 -1)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#eee6ff" rx="14.072" ry="22.078" transform="rotate(93.35 31.245 55.578)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx="14.592" cy="9.743" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(39.51 14.592 9.743)"/></g><g filter="url(#k)"><ellipse cx="61.728" cy="-5.321" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 61.728 -5.32)"/></g><g filter="url(#l)"><ellipse cx="55.618" cy="7.104" fill="#00c2ff" rx="5.971" ry="9.665" transform="rotate(37.892 55.618 7.104)"/></g><g filter="url(#m)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#n)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#o)"><ellipse cx="49.857" cy="30.678" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 49.857 30.678)"/></g><g filter="url(#p)"><ellipse cx="52.623" cy="33.171" fill="#00c2ff" rx="5.971" ry="15.297" transform="rotate(37.892 52.623 33.17)"/></g></g><path d="M6.919 0c-9.198 13.166-9.252 33.575 0 46.789h6.215c-9.25-13.214-9.196-33.623 0-46.789zm62.424 0h-6.215c9.198 13.166 9.252 33.575 0 46.789h6.215c9.25-13.214 9.196-33.623 0-46.789" class="parenthesis"/><defs><filter id="b" width="60.045" height="41.654" x="-5.564" y="16.92" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-40.407" y="-6.762" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-35.435" y="2.801" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-30.84" y="20.8" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-29.307" y="21.949" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="29.961" y="-17.13" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-13.43" y="-22.082" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="34.321" y="-37.644" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="38.847" y="-10.552" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="22.45" y="-1.645" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="32.919" y="11.36" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter></defs></svg>
+</file>
+
+<file path="frontend/src/components/.gitkeep">
+
+</file>
+
+<file path="frontend/src/pages/.gitkeep">
+
+</file>
+
+<file path="frontend/src/services/.gitkeep">
+
+</file>
+
+<file path="frontend/eslint.config.js">
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{js,jsx}'],
+    extends: [
+      js.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        ecmaFeatures: { jsx: true },
+        sourceType: 'module',
+      },
+    },
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+])
+</file>
+
+<file path="frontend/index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="frontend/README.md">
+# React + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+</file>
+
+<file path="frontend/vite.config.js">
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+</file>
+
+<file path="biome.json">
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedImports": "warn"
+      },
+      "complexity": {
+        "useLiteralKeys": "info"
+      }
+    }
+  },
+  "formatter": {
+    "enabled": true,
+    "lineWidth": 88,
+    "indentStyle": "space",
+    "indentWidth": 2
+  }
+}
+</file>
+
+<file path="docker-compose.yml">
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: postgres_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    env_file: .env
+
+volumes:
+  postgres-data:
+</file>
+
+<file path="backend/src/lib/auth_lib.ts">
+import z from "zod";
+
+export interface AuthResponse {
+  message: string,
+  token: string,
+  user: {
+    id: string,
+    email: string,
+    username: string
+  }
+}
+
+export interface AuthError {
+  error: string
+}
+
+export const registerSchema = z.object({
+  username: z.string()
+      .min(3, "Username must be at least 3 characters")
+      .max(30, "Username cannot exceed 30 characters")
+      .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores allowed"),
+  email: z.email("Email must be valid"),
+  password: z.string().min(12, "Password must be at least 12 characters"),
+});
+
+export const loginSchema = z.object({
+  identifier: z.string().min(3),
+  password: z.string().min(12, "Password must be at least 12 characters")
+})
+</file>
+
+<file path="backend/src/lib/opentdb.test.ts">
+import { describe, expect, test } from "bun:test";
+import { fetchQuestions, OpenTDBError } from "./opentdb";
+
+// Open Trivia DB restricts to 1 request per 5 seconds
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+describe("Open Trivia DB Service", () => {
+  test("fetches exactly 5 questions successfully", async () => {
+    const questions = await fetchQuestions({ amount: 5 });
+    expect(questions).toBeArray();
+    expect(questions.length).toBe(5);
+    expect(questions[0]?.question).toBeDefined();
+    expect(questions[0]?.correct_answer).toBeDefined();
+    expect(questions[0]?.incorrect_answers).toBeArray();
+  }, 10000);
+
+  test("fetches specific difficulty and type", async () => {
+    await delay(5050);
+    const questions = await fetchQuestions({
+      amount: 2,
+      difficulty: "easy",
+      type: "boolean",
+    });
+
+    expect(questions).toBeArray();
+    expect(questions.length).toBe(2);
+
+    for (const q of questions) {
+      expect(q.difficulty).toBe("easy");
+      expect(q.type).toBe("boolean");
+    }
+  }, 15000);
+
+  test("throws OpenTDBError on invalid amount (e.g. asking for 100 questions in a small category)", async () => {
+    await delay(5050);
+    // Category 30 is Science: Gadgets, which should not have 50 hard boolean questions
+    try {
+      await fetchQuestions({
+        amount: 50,
+        category: 30,
+        difficulty: "hard",
+        type: "boolean",
+      });
+      // Should not reach here if the API successfully fails
+      expect(true).toBe(false);
+    } catch (error) {
+      expect(error).toBeInstanceOf(OpenTDBError);
+      if (error instanceof OpenTDBError) {
+        expect(error.code).toBe(1); // No Results
+      }
+    }
+  }, 15000);
+});
+</file>
+
+<file path="backend/src/lib/prisma.ts">
+import { PrismaPg } from "@prisma/adapter-pg";
+import "dotenv/config";
+import type { Context, Next } from "hono";
+import { PrismaClient } from "../generated/prisma/client.js";
+import type { Env } from "../types.js";
+
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is not set");
+}
+
+const adapter = new PrismaPg({
+  connectionString: databaseUrl,
+});
+
+const prisma = new PrismaClient({ adapter });
+
+function withPrisma(c: Context<Env>, next: Next) {
+  if (!c.get("prisma")) {
+    c.set("prisma", prisma);
+  }
+  return next();
+}
+
+export default withPrisma;
+</file>
+
+<file path="backend/src/routes/leaderboard.ts">
+import { Hono } from "hono";
+import { calculateTitle } from "../lib/users_lib";
+import type { Env } from "../types";
+
+const leaderboard = new Hono<Env>();
+
+leaderboard.get("/", async (c) => {
+  const prisma = c.var.prisma;
+
+  const highestExpUsers = await prisma.user.findMany({
+    select: {
+      username: true,
+      exp: true,
+      avatarUrl: true
+    },
+    orderBy: {
+      exp: "desc"
+    },
+    take: 10
+  });
+
+  const leaderboardWithTitles = highestExpUsers.map((user) => {
+    return {
+      ...user,
+      title: calculateTitle(user.exp)
+    };
+  });
+
+  return c.json(leaderboardWithTitles, 200);
+});
+
+export default leaderboard;
+</file>
+
+<file path="backend/prisma.config.ts">
+// This file was generated by Prisma, and assumes you run Prisma commands using `bun --bun run prisma [command]`.
+import "dotenv/config";
+import { defineConfig, env } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+    seed: "bun prisma/seed.ts",
+  },
+  datasource: {
+    url: env("DATABASE_URL"),
+  },
+});
+</file>
+
+<file path="docs/database_schema.md">
+# Database Schema Documentation
+
+This document outlines the initial database schema for the Trivia Game application. The core models required for storing users, active quiz sessions, and the results of individual questions are `User`, `QuizSession`, and `QuizResult`.
+
+The database is powered by **PostgreSQL** and managed using **Prisma ORM**.
+
+## Models
+
+### 1. User
+
+Represents an individual playing the trivia game.
+
+| Field          | Type            | Attributes             | Description                                   |
+| -------------- | --------------- | ---------------------- | --------------------------------------------- |
+| `id`           | `String`        | `@id @default(uuid())` | Primary key.                                  |
+| `email`        | `String`        | `@unique`              | The user's email address.                     |
+| `username`     | `String`        | `@unique`              | Visual display name for leaderboards/profile. |
+| `passwordHash` | `String?`       | Optional               | Hashed password. Can be null if using OAuth.  |
+| `createdAt`    | `DateTime`      | `@default(now())`      | Creation timestamp.                           |
+| `updatedAt`    | `DateTime`      | `@updatedAt`           | Automatic update timestamp.                   |
+| `sessions`     | `QuizSession[]` | Relation               | One-to-many relationship with `QuizSession`.  |
+
+### 2. QuizSession
+
+Represents an active or completed run of a quiz by a user.
+
+| Field            | Type            | Attributes                   | Description                                             |
+| ---------------- | --------------- | ---------------------------- | ------------------------------------------------------- |
+| `id`             | `String`        | `@id @default(uuid())`       | Primary key.                                            |
+| `userId`         | `String`        | Foreign Key                  | References `User.id`. Indexed, `onDelete: Cascade`.     |
+| `status`         | `SessionStatus` | `Enum` default `IN_PROGRESS` | Can be `IN_PROGRESS`, `COMPLETED`, `ABANDONED`.         |
+| `score`          | `Int`           | `@default(0)`                | Total accumulated score in this session.                |
+| `totalQuestions` | `Int`           |                              | Expected number of questions in the session.            |
+| `category`       | `String?`       | Optional                     | The trivia category (e.g., "Science", "History").       |
+| `difficulty`     | `Difficulty?`   | `Enum` Optional              | The difficulty level (`EASY`, `MEDIUM`, `HARD`).        |
+| `startedAt`      | `DateTime`      | `@default(now())`            | When the session started.                               |
+| `endedAt`        | `DateTime?`     | Optional                     | When the session ended.                                 |
+| `results`        | `QuizResult[]`  | Relation                     | One-to-many relationship tracking individual questions. |
+
+### 3. QuizResult
+
+Represents the result of a single question answered during a `QuizSession`.
+
+| Field           | Type       | Attributes             | Description                                           |
+| --------------- | ---------- | ---------------------- | ----------------------------------------------------- |
+| `id`            | `String`   | `@id @default(uuid())` | Primary key.                                          |
+| `sessionId`     | `String`   | Foreign Key            | References `QuizSession.id`. Indexed, `onDelete: Cascade`. |
+| `questionText`  | `String`   |                        | The text of the question asked.                       |
+| `userAnswer`    | `String?`  | Optional               | The answer provided by the user.                      |
+| `correctAnswer` | `String`   |                        | The correct answer for the question.                  |
+| `isCorrect`     | `Boolean`  |                        | Whether the `userAnswer` matched the `correctAnswer`. |
+| `createdAt`     | `DateTime` | `@default(now())`      | When the answer was submitted.                        |
+
+## Enums
+
+- **SessionStatus**: `IN_PROGRESS`, `COMPLETED`, `ABANDONED`
+- **Difficulty**: `EASY`, `MEDIUM`, `HARD`
+
+## Entity-Relationship Diagram
+
+```mermaid
+erDiagram
+    User ||--o{ QuizSession : "creates"
+    QuizSession ||--o{ QuizResult : "records"
+
+    User {
+        String id PK
+        String email UK
+        String username UK
+        String passwordHash
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    QuizSession {
+        String id PK
+        String userId FK
+        Enum status "IN_PROGRESS|COMPLETED|ABANDONED"
+        Int score
+        Int totalQuestions
+        String category
+        Enum difficulty "EASY|MEDIUM|HARD"
+        DateTime startedAt
+        DateTime endedAt
+    }
+
+    QuizResult {
+        String id PK
+        String sessionId FK
+        String questionText
+        String userAnswer
+        String correctAnswer
+        Boolean isCorrect
+        DateTime createdAt
+    }
+```
+</file>
+
+<file path="frontend/src/pages/QuizConfigPage.jsx">
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { fetchCategories } from '../services/api.js';
+
+export default function QuizConfigPage() {
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [difficulty, setDifficulty] = useState('medium');
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const data = await fetchCategories();
+        setCategories(Array.isArray(data) ? data : []);
+      } catch {
+        setCategories([]);
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  const handleStart = () => {
+    const selectedCategoryName =
+      categories.find((cat) => String(cat.id) === String(selectedCategory))?.name || 'Random';
+
+    navigate('/questionspage', {
+      state: { category: selectedCategory, difficulty, categoryName: selectedCategoryName },
+    });
+  };
+
+  const theme = {
+    background: '#121212',
+    cardBg: '#1e1e1e',
+    accent: '#7c4dff',
+    textMain: '#ffffff',
+    textMuted: '#bbb',
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: 'calc(100vh - 70px)',
+        backgroundColor: theme.background,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: theme.cardBg,
+          padding: '40px',
+          borderRadius: '20px',
+          width: '100%',
+          maxWidth: '420px',
+          textAlign: 'center',
+          border: '1px solid #333',
+        }}
+      >
+        <h1 style={{ color: theme.accent, marginBottom: '30px' }}>Quiz Setup</h1>
+
+        <div style={{ textAlign: 'left', marginBottom: '20px' }}>
+          <label style={{ color: theme.textMuted, display: 'block', marginBottom: '8px' }}>
+            Choose category:
+          </label>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            disabled={isLoadingCategories}
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: '#333',
+              color: '#fff',
+              border: 'none',
+            }}
+          >
+            <option value="">
+              {isLoadingCategories ? 'Loading categories...' : 'All (Random)'}
+            </option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ textAlign: 'left', marginBottom: '30px' }}>
+          <label style={{ color: theme.textMuted, display: 'block', marginBottom: '8px' }}>
+            Difficulty:
+          </label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {['easy', 'medium', 'hard'].map((level) => (
+              <button
+                key={level}
+                type="button"
+                onClick={() => setDifficulty(level)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  backgroundColor: difficulty === level ? theme.accent : '#333',
+                  color: '#fff',
+                  textTransform: 'capitalize',
+                }}
+              >
+                {level}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleStart}
+          style={{
+            width: '100%',
+            padding: '15px',
+            borderRadius: '12px',
+            backgroundColor: theme.accent,
+            color: '#fff',
+            fontWeight: 'bold',
+            fontSize: '18px',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          Start Game
+        </button>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="frontend/src/pages/ResultsPage.jsx">
+// src/pages/ResultsPage.jsx
+import { useLocation, useNavigate } from 'react-router-dom';
+
+const formatElapsedTime = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+export default function ResultsPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Odbieramy dane przesłane z QuestionsPage (punktacja)
+  const { totalScore, maxQuestions, completionTimeSeconds } = location.state || {
+    totalScore: 0,
+    maxQuestions: 0,
+    completionTimeSeconds: 0,
+  };
+
+  // Obliczamy procent poprawych odpowiedzi
+  const percentage = maxQuestions > 0 ? Math.round((totalScore / maxQuestions) * 100) : 0;
+
+  const theme = {
+    background: '#121212',
+    cardBg: '#1e1e1e',
+    accent: '#7c4dff',
+    textMain: '#ffffff',
+    textSec: '#b3b3b3'
+  };
+
+  return (
+    <div style={{
+      minHeight: 'calc(100vh - 70px)',
+      backgroundColor: theme.background,
+      color: theme.textMain,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px'
+    }}>
+      <div style={{
+        backgroundColor: theme.cardBg,
+        padding: '50px',
+        borderRadius: '24px',
+        textAlign: 'center',
+        maxWidth: '500px',
+        width: '100%',
+        border: '1px solid #333',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+      }}>
+        <h1 style={{ color: theme.accent, fontSize: '3rem', marginBottom: '10px' }}>Finished!</h1>
+        <p style={{ color: theme.textSec, fontSize: '1.2rem', marginBottom: '30px' }}>Here is your final result summary:</p>
+
+        {/* Wynik punktowy */}
+        <div style={{ marginBottom: '40px' }}>
+          <div style={{ fontSize: '4rem', fontWeight: 'bold' }}>
+            {totalScore} <span style={{ fontSize: '1.5rem', color: theme.textSec }}>/ {maxQuestions}</span>
+          </div>
+          <div style={{
+            marginTop: '10px',
+            fontSize: '1.2rem',
+            color: percentage >= 50 ? '#4caf50' : '#f44336',
+            fontWeight: 'bold'
+          }}>
+            Accuracy: {percentage}%
+          </div>
+          <div style={{
+            marginTop: '12px',
+            fontSize: '1rem',
+            color: theme.textSec,
+          }}>
+            Time: <span style={{ color: '#8fd3ff', fontWeight: 'bold' }}>{formatElapsedTime(completionTimeSeconds)}</span>
+          </div>
+        </div>
+
+        {/* Przyciski akcji */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <button
+            onClick={() => navigate('/quizpage')}
+            style={{
+              padding: '15px',
+              fontSize: '1rem',
+              fontWeight: 'bold',
+              backgroundColor: theme.accent,
+              color: 'white',
+              border: 'none',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              transition: 'transform 0.2s'
+            }}
+            onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+            onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+          >
+            Play Again
+          </button>
+
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              padding: '15px',
+              fontSize: '1rem',
+              backgroundColor: 'transparent',
+              color: theme.textSec,
+              border: `1px solid ${theme.textSec}`,
+              borderRadius: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            Back to Main Menu
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+</file>
+
+<file path="frontend/src/pages/StartPage.jsx">
+import { Link } from 'react-router-dom';
+
+export default function StartPage() {
+  return (
+    <section className="start-page">
+      <div className="start-page__card">
+        <div className="start-logo" aria-label="Trivia Game logo">
+          <div className="start-logo__icon">TG</div>
+          <div>
+            <p className="start-logo__tag">Knowledge. Competition. Emotion.</p>
+            <h1 className="start-logo__title">Trivia Game</h1>
+          </div>
+        </div>
+
+        <p className="start-page__description">
+          Test your knowledge with questions from multiple categories, choose the difficulty level, and beat
+          your best score. Every quiz is a fresh set of questions and a real reflex challenge.
+        </p>
+
+        <div className="start-page__actions">
+          <Link to="/quizpage" className="start-btn start-btn--primary">
+            Start Quiz
+          </Link>
+          <Link to="/register" className="start-btn start-btn--accent">
+            Sign Up
+          </Link>
+          <Link to="/leaderboard" className="start-btn start-btn--secondary">
+            View Leaderboard
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+</file>
+
+<file path="frontend/src/config.js">
+// Centralna konfiguracja backendu dla frontendu
+// Pobiera VITE_BACKEND_URL z .env, obsługuje wsteczną kompatybilność z /api/v1
+// Jeśli zmienna nie istnieje, używa localhost:3000 jako fallback
+
+const rawBackendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+
+// Usuń końcowe /api/v1 oraz trailing slash (wsteczna kompatybilność)
+const backendOrigin = rawBackendUrl.replace(/\/api\/v1\/?$/, "").replace(/\/+$/, "");
+
+// Helper do bezpiecznego łączenia ścieżek URL (zapobiega podwójnym slashom)
+export const joinPath = (...segments) => {
+  return segments
+    .map((seg) => seg.replace(/^\/+|\/+$/g, ""))
+    .filter(Boolean)
+    .join("/");
+};
+
+export const API_BASE_URL = `${backendOrigin}/api/v1`;
+export const STATIC_BASE_URL = `${backendOrigin}/static`;
+</file>
+
+<file path="frontend/src/main.jsx">
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+
+  <App />
+
+)
+</file>
+
+<file path="frontend/.gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+</file>
+
+<file path="frontend/package.json">
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.14.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9.39.4",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "vite": "^8.0.1"
+  }
+}
+</file>
+
+<file path="backend/src/lib/opentdb.ts">
+export interface FetchQuestionsOptions {
+  amount: number;
+  category?: number;
+  difficulty?: "easy" | "medium" | "hard";
+  type?: "multiple" | "boolean";
+}
+
+export interface OpenTDBQuestion {
+  type: "multiple" | "boolean";
+  difficulty: "easy" | "medium" | "hard";
+  category: string;
+  question: string;
+  correct_answer: string;
+  incorrect_answers: string[];
+}
+
+export interface OpenTDBResponse {
+  response_code: number;
+  results: OpenTDBQuestion[];
+}
+
+export interface OpenTDBCategory {
+  id: number;
+  name: string;
+}
+
+interface OpenTDBCategoriesResponse {
+  trivia_categories: OpenTDBCategory[];
+}
+
+export class OpenTDBError extends Error {
+  constructor(
+    public code: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "OpenTDBError";
+  }
+}
+
+/**
+ * Fetches questions from the Open Trivia Database API.
+ *
+ * @param options - Configure the amount, category, difficulty, and type of questions.
+ * @returns A promise that resolves to an array of OpenTDBQuestion.
+ * @throws {OpenTDBError} When the API responds with a non-zero response code.
+ * @throws {Error} On network or JSON parse errors.
+ */
+export async function fetchQuestions(
+  options: FetchQuestionsOptions,
+): Promise<OpenTDBQuestion[]> {
+  const url = new URL("https://opentdb.com/api.php");
+
+  url.searchParams.append("amount", options.amount.toString());
+
+  if (options.category) {
+    url.searchParams.append("category", options.category.toString());
+  }
+
+  if (options.difficulty) {
+    url.searchParams.append("difficulty", options.difficulty);
+  }
+
+  if (options.type) {
+    url.searchParams.append("type", options.type);
+  }
+
+  const response = await fetch(url.toString());
+
+  if (response.status === 429) {
+    throw new OpenTDBError(
+      5,
+      "Rate Limit: Too many requests have occurred. Each IP can only access the API once every 5 seconds.",
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch from OpenTDB API: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as OpenTDBResponse;
+
+  switch (data.response_code) {
+    case 0: // Success
+      return data.results;
+    case 1:
+      throw new OpenTDBError(
+        1,
+        "No Results: Could not return results. The API doesn't have enough questions for your query. (ex. Asking for 50 Questions in a Category that only has 20.)",
+      );
+    case 2:
+      throw new OpenTDBError(2, "Invalid Parameter: Contains an invalid parameter.");
+    case 3:
+      throw new OpenTDBError(3, "Token Not Found: Session Token does not exist.");
+    case 4:
+      throw new OpenTDBError(
+        4,
+        "Token Empty: Session Token has returned all possible questions for the specified query.",
+      );
+    case 5:
+      throw new OpenTDBError(
+        5,
+        "Rate Limit: Too many requests have occurred. Each IP can only access the API once every 5 seconds.",
+      );
+    default:
+      throw new OpenTDBError(
+        data.response_code,
+        `Unknown OpenTDB response code: ${data.response_code}`,
+      );
+  }
+}
+
+/**
+ * Fetches all available categories from Open Trivia Database.
+ */
+export async function fetchCategories(): Promise<OpenTDBCategory[]> {
+  const response = await fetch("https://opentdb.com/api_category.php");
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch categories from OpenTDB API: ${response.status} ${response.statusText}`,
+    );
+  }
+
+  const data = (await response.json()) as OpenTDBCategoriesResponse;
+  return Array.isArray(data.trivia_categories) ? data.trivia_categories : [];
+}
+</file>
+
+<file path="backend/src/types.ts">
+import type { PrismaClient } from "./generated/prisma/client";
+
+export type Env = {
+  Variables: {
+    prisma: PrismaClient;
+    jwtSecret: string;
+    jwtPayload: any;
+  };
+};
+</file>
+
+<file path="backend/.gitignore">
+# dependencies (bun install)
+node_modules
+
+# output
+out
+dist
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
+.DS_Store
+
+/src/generated/prisma
+/static
+</file>
+
+<file path="backend/biome.json">
+{
+  "root": false,
+  "extends": "//"
+}
+</file>
+
+<file path="backend/tsconfig.json">
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "types": ["bun"],
+
+    // Best practices
+    "strict": true,
+    "skipLibCheck": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+
+    // Some stricter flags (disabled by default)
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noPropertyAccessFromIndexSignature": false
+  },
+  "include": ["src/", "prisma/seed.ts"]
+}
+</file>
+
+<file path="frontend/src/components/Header.jsx">
+// src/components/Header.jsx
+import { Link, useLocation } from 'react-router-dom';
+
+// Profesjonalna paleta kolorów, gotowa do wklejenia
+const colors = {
+  bg: '#1a1a1a',          // Ciemny grafit (tło paska)
+  bgAlt: '#333333',       // Ciemniejszy szary (obramowanie)
+  text: '#ffffff',        // Biały (tekst)
+  primary: '#7c4dff',     // Nowoczesny fiolet (akcent przycisków)
+  primaryHover: '#b47cff' // Jaśniejszy fiolet (efekt po najechaniu)
+};
+
+export default function Header() {
+  const location = useLocation();
+  const token = localStorage.getItem('token');
+  const isAuthenticated = Boolean(token);
+
+  // Funkcja pomocnicza do sprawdzania, czy dany link jest aktywny
+  const isActive = (path) => location.pathname === path;
+
+  // Styl dla pojedynczego przycisku nawigacji
+  const getNavStyle = (path) => ({
+    textDecoration: 'none',
+    color: colors.text,
+    fontSize: '16px',
+    backgroundColor: isActive(path) ? colors.primary : 'transparent', // Fiolet tylko dla aktywnego
+    padding: '12px 24px',
+    borderRadius: '8px', // Zaokrąglone rogi z Twoich makiet
+    transition: 'background-color 0.2s ease'
+  });
+
+  return (
+    <header style={{
+      display: 'flex',
+      justifyContent: 'space-between', // Rozsuwa elementy na boki
+      alignItems: 'center',
+      width: '100%', // Rozciągnięty na całej długości
+      padding: '15px 50px', // Odstępy wewnątrz paska
+      backgroundColor: colors.bg,
+      color: colors.text,
+      borderBottom: `2px solid ${colors.bgAlt}`, // Ciemne obramowanie na dole
+      boxSizing: 'border-box' // Zapobiega "wypychaniu" paska poza ekran
+    }}>
+      {/* Lewa sekcja - Logo */}
+      <div>
+        <h2 style={{ margin: 0, fontSize: '26px', fontWeight: 'bold' }}>
+          <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>
+            Trivia<span style={{ color: colors.primary }}>Game</span> {/* Dodany kolorowy akcent w logo */}
+          </Link>
+        </h2>
+      </div>
+
+      {/* Prawa sekcja - Menu */}
+      <nav style={{ display: 'flex', gap: '15px' }}>
+        <Link to="/quizpage" style={getNavStyle('/quizpage')}>Quiz</Link>
+        <Link to="/leaderboard" style={getNavStyle('/leaderboard')}>Leaderboard</Link>
+        {isAuthenticated ? (
+          <Link to="/profile" style={getNavStyle('/profile')}>Profile</Link>
+        ) : (
+          <Link to="/login" style={getNavStyle('/login')}>Login</Link>
+        )}
+      </nav>
+    </header>
+  );
+}
+</file>
+
+<file path="frontend/src/pages/QuestionsPage.jsx">
+import { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom'; // Import nawigacji
+import { startQuizSession, finishQuizSession } from '../services/api.js';
+
+const formatElapsedTime = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+};
+
+export default function QuestionsPage() {
+  const navigate = useNavigate(); // Hook do przenoszenia między stronami
+  const location = useLocation();
+
+  const { category, difficulty, categoryName } = location.state || {
+    category: '',
+    difficulty: 'medium',
+    categoryName: 'Random',
+  };
+
+  const token = localStorage.getItem('token');
+
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
+  const [collectedAnswers, setCollectedAnswers] = useState([]);
+  const [revealAnswer, setRevealAnswer] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    const loadQuestions = async () => {
+      if (!token) {
+        setError('You must be logged in to start a quiz session.');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const data = await startQuizSession({
+          amount: 10,
+          difficulty,
+          category,
+          token,
+        });
+
+        setSessionId(data?.sessionId || null);
+        setQuestions(data?.questions || []);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadQuestions();
+  }, [category, difficulty, token]);
+
+  useEffect(() => {
+    if (isLoading || questions.length === 0 || error) return;
+
+    const startedAt = Date.now();
+    const timerId = setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 1000);
+
+    return () => clearInterval(timerId);
+  }, [isLoading, questions.length, error]);
+
+  const handleAnswerClick = (answer) => {
+    if (revealAnswer) {
+      return;
+    }
+
+    setSelectedAnswer(answer);
+    setRevealAnswer(true);
+  };
+
+  const handleNextQuestion = async () => {
+    const currentQ = questions[currentIndex];
+
+    if (!currentQ || !selectedAnswer) {
+      return;
+    }
+
+    const nextAnswers = [
+      ...collectedAnswers,
+      { resultId: currentQ.resultId, userAnswer: selectedAnswer },
+    ];
+
+    if (currentIndex < questions.length - 1) {
+      setCollectedAnswers(nextAnswers);
+      setCurrentIndex(currentIndex + 1);
+      setSelectedAnswer(null);
+      setRevealAnswer(false);
+    } else {
+      try {
+        setIsSubmitting(true);
+
+        const result = await finishQuizSession({
+          sessionId,
+          answers: nextAnswers,
+          token,
+        });
+
+        navigate('/results', {
+          state: {
+            totalScore: result?.score ?? 0,
+            maxQuestions: result?.totalQuestions ?? questions.length,
+            expGained: result?.expGained ?? 0,
+            completionTimeSeconds: elapsedSeconds,
+          }
+        });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  if (isLoading) return <div style={centerStyle}>Loading questions...</div>;
+  if (error) return <div style={centerStyle}>Error: {error}</div>;
+  if (questions.length === 0) return <div style={centerStyle}>No questions available.</div>;
+
+  const currentQ = questions[currentIndex];
+  const difficultyLabel =
+    difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Hard' : 'Medium';
+  const selectedCategoryLabel =
+    categoryName || (category ? currentQ.category : 'Random');
+
+  const theme = {
+    background: '#121212',
+    cardBg: '#1e1e1e',
+    textMain: '#ffffff',
+    textSec: '#b3b3b3',
+    accent: '#7c4dff',
+    correct: '#2e7d32',
+    wrong: '#c62828',
+    buttonDefault: '#333333',
+    buttonSelected: '#7c4dff',
+    buttonHover: '#444444'
+  };
+
+  return (
+    <div style={{
+      minHeight: 'calc(100vh - 70px)',
+      backgroundColor: theme.background,
+      color: theme.textMain,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      padding: '40px 20px',
+      transition: 'all 0.3s ease'
+    }}>
+
+      <div style={{
+        color: theme.accent,
+        fontSize: '14px',
+        textTransform: 'uppercase',
+        letterSpacing: '2px',
+        marginBottom: '10px',
+        fontWeight: 'bold'
+      }}>
+        {currentQ.category}
+      </div>
+
+      <div style={{
+        display: 'flex',
+        gap: '10px',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        marginBottom: '16px'
+      }}>
+        <span style={{
+          backgroundColor: '#2a2a2a',
+          border: '1px solid #3a3a3a',
+          borderRadius: '999px',
+          padding: '6px 12px',
+          fontSize: '13px',
+          color: '#ddd'
+        }}>
+          Category: {selectedCategoryLabel}
+        </span>
+        <span style={{
+          backgroundColor: 'rgba(124, 77, 255, 0.15)',
+          border: '1px solid rgba(124, 77, 255, 0.55)',
+          borderRadius: '999px',
+          padding: '6px 12px',
+          fontSize: '13px',
+          color: theme.accent,
+          fontWeight: 'bold'
+        }}>
+          Difficulty: {difficultyLabel}
+        </span>
+        <span style={{
+          backgroundColor: '#1f2833',
+          border: '1px solid #35506a',
+          borderRadius: '999px',
+          padding: '6px 12px',
+          fontSize: '13px',
+          color: '#8fd3ff',
+          fontWeight: 'bold'
+        }}>
+          Time: {formatElapsedTime(elapsedSeconds)}
+        </span>
+      </div>
+
+      <div style={{ color: theme.textSec, marginBottom: '30px' }}>
+        Question <span style={{ color: theme.textMain }}>{currentIndex + 1}</span> / {questions.length}
+      </div>
+
+      <div style={{
+        backgroundColor: theme.cardBg,
+        padding: '40px',
+        borderRadius: '16px',
+        width: '100%',
+        maxWidth: '700px',
+        textAlign: 'center',
+        border: '1px solid #333',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+      }}>
+        <h2 style={{
+          marginBottom: '40px',
+          lineHeight: '1.4',
+          fontSize: '24px',
+          fontWeight: '500'
+        }} dangerouslySetInnerHTML={{ __html: currentQ.question }} />
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '20px'
+        }}>
+          {(currentQ.answers || []).map((answer, index) => {
+            const isSelected = selectedAnswer === answer;
+            const isCorrect = revealAnswer && answer === currentQ.correctAnswer;
+            const isWrong = revealAnswer && isSelected && answer !== currentQ.correctAnswer;
+
+            let borderColor = 'transparent';
+            let bgColor = theme.buttonDefault;
+            let textColor = theme.textMain;
+            let fontWeight = 'normal';
+
+            if (isCorrect) {
+              borderColor = theme.correct;
+              bgColor = 'rgba(46, 125, 50, 0.18)';
+              textColor = theme.correct;
+              fontWeight = 'bold';
+            } else if (isWrong) {
+              borderColor = theme.wrong;
+              bgColor = 'rgba(198, 40, 40, 0.18)';
+              textColor = theme.wrong;
+              fontWeight = 'bold';
+            } else if (isSelected) {
+              borderColor = theme.accent;
+              bgColor = 'rgba(124, 77, 255, 0.15)';
+              textColor = theme.accent;
+              fontWeight = 'bold';
+            }
+
+            return (
+              <button
+                key={index}
+                onClick={() => handleAnswerClick(answer)}
+                style={{
+                  padding: '20px',
+                  fontSize: '16px',
+                  border: `2px solid ${borderColor}`,
+                  borderRadius: '12px',
+                  cursor: revealAnswer ? 'default' : 'pointer',
+                  backgroundColor: bgColor,
+                  color: textColor,
+                  fontWeight: fontWeight,
+                  transition: 'all 0.2s ease',
+                  outline: 'none'
+                }}
+                dangerouslySetInnerHTML={{ __html: answer }}
+              />
+            );
+          })}
+        </div>
+      </div>
+
+      <button
+        onClick={handleNextQuestion}
+        disabled={!selectedAnswer || isSubmitting}
+        style={{
+          marginTop: '40px',
+          padding: '15px 45px',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          backgroundColor: selectedAnswer && !isSubmitting ? theme.accent : '#222',
+          color: selectedAnswer && !isSubmitting ? 'white' : '#555',
+          border: 'none',
+          borderRadius: '30px',
+          cursor: selectedAnswer && !isSubmitting ? 'pointer' : 'not-allowed',
+          boxShadow: selectedAnswer && !isSubmitting ? `0 0 20px ${theme.accent}66` : 'none',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        {isSubmitting
+          ? 'Saving...'
+          : (currentIndex < questions.length - 1 ? 'Next Question' : 'Finish Quiz')}
+      </button>
+    </div>
+  );
+}
+
+const centerStyle = { textAlign: 'center', padding: '50px', fontSize: '20px', color: '#fff', backgroundColor: '#121212', minHeight: '100vh' };
+</file>
+
+<file path="frontend/src/index.css">
+/* src/index.css */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+  /* Podstawowa, ładna czcionka */
+  background-color: #f5f5f5;
+  /* Delikatnie szare tło całej strony */
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  /* Usuwa domyślną blokadę szerokości Vite */
+  margin: 0;
+  padding: 0;
+}
+</file>
+
+<file path=".gitignore">
+# =========================
+# OS & Editor Files
+# =========================
+.DS_Store
+Thumbs.db
+.idea/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
+
+# dependencies
+node_modules/
+
+# build output
+dist/
+build/
+
+# environment variables
+.env
+.env.*
+!.env.example
+
+# logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun.lockb.old
+
+# coverage
+coverage/
+
+# editor files
+.idea/
+
+# system files
+.DS_Store
+Thumbs.db
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+</file>
+
+<file path="README.md">
+# Trivia Game
+
+Web application for general knowledge quizzes based on the Open Trivia Database API.
+
+## Tech stack
+
+* React.js
+* Bun + Hono
+* PostgreSQL + Prisma
+
+## Project structure
+
+```text
+frontend/   # frontend application
+backend/    # REST API and business logic
+docs/       # project documentation
+```
+</file>
+
+<file path="backend/src/routes/auth.ts">
+import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
+import { sign } from "hono/jwt";
+import { type AuthError, type AuthResponse, loginSchema, registerSchema } from "../lib/auth_lib";
+import type { Env } from "../types";
+
+const auth = new Hono<Env>();
+
+auth.post("/register", zValidator("json", registerSchema), async (c) => {
+  const prisma = c.var.prisma;
+  const { email, username, password } = c.req.valid("json");
+
+  if (!email || !username || !password) {
+    return c.json<AuthError>({ error: "Email, username, and password are required" }, 400);
+  }
+
+  // Check if user already exists
+  const existingEmail = await prisma.user.findUnique({ 
+    where: {
+      email: email
+    }
+  });
+
+  if (existingEmail) {
+    return c.json<AuthError>({ error: "Email is already in use" }, 409);
+  }
+
+  const existingUsername = await prisma.user.findUnique({
+    where: {
+      username: username
+    }
+  });
+
+  if (existingUsername) {
+    return c.json<AuthError>({ error: "Username is already in use" }, 409);
+  }
+
+  // Create new user
+  const passwordHash = await Bun.password.hash(password);
+
+  const user = await prisma.user.create({
+    data: {
+      email: email,
+      username: username,
+      passwordHash: passwordHash
+    }
+  });
+
+  // Generate JWT token
+  const payload = {
+    sub: user.id,
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
+  };
+
+  const token = await sign(payload, c.var.jwtSecret);
+
+  return c.json<AuthResponse>({
+    message: "User registered successfully",
+    token,
+    user: {
+      id: user.id,
+      email: user.email,
+      username: user.username
+    }
+  }, 201);
+});
+
+
+auth.post("/login", zValidator("json", loginSchema), async (c) => {
+  const prisma = c.var.prisma;
+  const { identifier, password } = c.req.valid("json");
+
+  if (!identifier || !password) {
+    return c.json({error: "Email/username and password are required"}, 400);
+  }
+
+  // Check if user exists
+  const user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: identifier },
+        { username: identifier }
+      ]
+    }
+  });
+
+  if (!user) {
+    return c.json<AuthError>({ error: "User not found"}, 401);
+  }
+
+  // Reject traditional login for OAuth users without password
+  if (!user.passwordHash) {
+    return c.json<AuthError>({ error: "Invalid credentials"}, 401);
+  }
+
+  const passwordMatching = await Bun.password.verify(password, user.passwordHash);
+  if (!passwordMatching) {
+    return c.json<AuthError>({ error: "Invalid credentials"}, 401);
+  }
+
+  // Successful login
+  const payload = {
+    sub: user.id,
+    exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
+  };
+
+  const token = await sign(payload, c.var.jwtSecret);
+
+  return c.json<AuthResponse>({
+    message: "Login successful",
+    token: token,
+    user: {
+      id: user.id,
+      email: user.email,
+      username: user.username
+    }
+  }, 200)
+});
+
+export default auth;
+</file>
+
+<file path="frontend/src/App.css">
+/* App.css */
+.start-page {
+  min-height: calc(100vh - 74px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 20px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(124, 77, 255, 0.18), transparent 35%),
+    radial-gradient(circle at 85% 80%, rgba(124, 77, 255, 0.12), transparent 40%),
+    linear-gradient(135deg, #121212 0%, #151515 55%, #1a1a1a 100%);
+}
+
+.start-page__card {
+  width: min(820px, 100%);
+  border-radius: 24px;
+  padding: 44px;
+  text-align: center;
+  background: rgba(30, 30, 30, 0.92);
+  border: 1px solid rgba(124, 77, 255, 0.35);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+}
+
+.start-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.start-logo__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #f5efff;
+  background: linear-gradient(145deg, #6f40ff 0%, #9d7dff 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.start-logo__tag {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a995da;
+}
+
+.start-logo__title {
+  margin: 4px 0 0;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-size: clamp(34px, 6vw, 48px);
+  line-height: 1.02;
+  color: #ffffff;
+}
+
+.start-page__description {
+  margin: 22px 0 0;
+  max-width: 640px;
+  font-size: 18px;
+  line-height: 1.65;
+  color: #c8c8d2;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.start-page__actions {
+  margin-top: 30px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.start-btn {
+  text-decoration: none;
+  padding: 13px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.start-btn:hover {
+  transform: translateY(-1px);
+}
+
+.start-btn--primary {
+  background: linear-gradient(140deg, #7c4dff 0%, #5f39c8 100%);
+  color: #f8f3ff;
+  box-shadow: 0 12px 28px rgba(124, 77, 255, 0.28);
+}
+
+.start-btn--accent {
+  background: rgba(124, 77, 255, 0.18);
+  color: #d6c4ff;
+  border: 1px solid rgba(124, 77, 255, 0.55);
+}
+
+.start-btn--secondary {
+  background: rgba(255, 255, 255, 0.04);
+  color: #d5d5de;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+@media (max-width: 640px) {
+  .start-page__card {
+    padding: 26px;
+  }
+
+  .start-page__description {
+    font-size: 16px;
+  }
+}
+</file>
+
+<file path=".env.example">
+# Postgres
+DATABASE_URL=postgresql://user:pass@localhost:5432/app_database
+POSTGRES_USER=user
+POSTGRES_PASSWORD=pass
+POSTGRES_DB=app_database
+
+# JWT
+JWT_SECRET="put_a_very_long_random_string_here_1234567890"
+</file>
+
+<file path="backend/prisma/seed.ts">
+import { PrismaPg } from "@prisma/adapter-pg";
+import { type Difficulty, type Prisma, PrismaClient, type SessionStatus } from "../src/generated/prisma/client.js";
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL environment variable is missing");
+}
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const prisma = new PrismaClient({
+  adapter,
+});
+
+const getRandomExp = () => Math.floor(Math.random() * 20001);
+
+// generated by gemini
+export async function main() {
+  console.log("🌱 Starting database seed...");
+
+  await prisma.user.deleteMany();
+  console.log("🧹 Cleared existing data.");
+
+  const rawUsers = [
+    {
+      email: "alice@example.com",
+      username: "alice_wonder",
+      password: "password123",
+      bio: "Trivia enthusiast and science lover.",
+      sessions: [
+        {
+          totalQuestions: 3,
+          score: 2,
+          status: "COMPLETED",
+          category: "Science",
+          difficulty: "EASY",
+          results: [
+            { questionText: "What is H2O?", correctAnswer: "Water", userAnswer: "Water", isCorrect: true },
+            { questionText: "What is the powerhouse of the cell?", correctAnswer: "Mitochondria", userAnswer: "Nucleus", isCorrect: false },
+            { questionText: "What planet is closest to the sun?", correctAnswer: "Mercury", userAnswer: "Mercury", isCorrect: true },
+          ],
+        },
+        {
+          totalQuestions: 5,
+          score: 2,
+          status: "IN_PROGRESS",
+          category: "Science",
+          difficulty: "MEDIUM",
+          results: [
+            { questionText: "What is the hardest natural substance?", correctAnswer: "Diamond", userAnswer: "Diamond", isCorrect: true },
+            { questionText: "What is the symbol for Gold?", correctAnswer: "Au", userAnswer: "Au", isCorrect: true },
+            { questionText: "How many bones in the human body?", correctAnswer: "206", userAnswer: null, isCorrect: false },
+            { questionText: "What is the speed of light?", correctAnswer: "299,792 km/s", userAnswer: null, isCorrect: false },
+            { questionText: "Who developed the theory of relativity?", correctAnswer: "Albert Einstein", userAnswer: null, isCorrect: false },
+          ],
+        },
+      ],
+    },
+    {
+      email: "bob@example.com",
+      username: "bob_builder",
+      password: "securepassword456",
+      bio: "Just here to learn history.",
+      sessions: [
+        {
+          totalQuestions: 4,
+          score: 1,
+          status: "ABANDONED",
+          category: "History",
+          difficulty: "HARD",
+          results: [
+            { questionText: "In what year did World War II end?", correctAnswer: "1945", userAnswer: "1945", isCorrect: true },
+            { questionText: "Who was the first US President?", correctAnswer: "George Washington", userAnswer: "Abraham Lincoln", isCorrect: false },
+            { questionText: "When did the Roman Empire fall?", correctAnswer: "476 AD", userAnswer: null, isCorrect: false },
+            { questionText: "In what year was the Magna Carta signed?", correctAnswer: "1215", userAnswer: null, isCorrect: false },
+          ],
+        },
+      ],
+    },
+    {
+      email: "charlie@example.com",
+      username: "trivia_king_99",
+      password: "charlie_secret",
+      bio: "I win every pub quiz.",
+      sessions: [
+        {
+          totalQuestions: 4,
+          score: 4,
+          status: "COMPLETED",
+          category: "Pop Culture",
+          difficulty: "MEDIUM",
+          results: [
+            { questionText: "Who played Iron Man in the MCU?", correctAnswer: "Robert Downey Jr.", userAnswer: "Robert Downey Jr.", isCorrect: true },
+            { questionText: "What year did Titanic come out?", correctAnswer: "1997", userAnswer: "1997", isCorrect: true },
+            { questionText: "What is the highest-grossing film of all time?", correctAnswer: "Avatar", userAnswer: "Avatar", isCorrect: true },
+            { questionText: "Who was the first Disney princess?", correctAnswer: "Snow White", userAnswer: "Snow White", isCorrect: true },
+          ],
+        },
+        {
+          totalQuestions: 2,
+          score: 1,
+          status: "COMPLETED",
+          category: "Music",
+          difficulty: "EASY",
+          results: [
+            { questionText: "Who is known as the King of Pop?", correctAnswer: "Michael Jackson", userAnswer: "Michael Jackson", isCorrect: true },
+            { questionText: "Which band wrote 'Hey Jude'?", correctAnswer: "The Beatles", userAnswer: "The Rolling Stones", isCorrect: false },
+          ],
+        },
+      ],
+    },
+    {
+      email: "diana@example.com",
+      username: "diana_codes",
+      password: "devpassword!",
+      bio: "Full-stack developer testing her geography knowledge.",
+      sessions: [
+        {
+          totalQuestions: 3,
+          score: 0,
+          status: "IN_PROGRESS",
+          category: "Geography",
+          difficulty: "HARD",
+          results: [
+            { questionText: "What is the capital of Australia?", correctAnswer: "Canberra", userAnswer: "Sydney", isCorrect: false },
+            { questionText: "What is the longest river in the world?", correctAnswer: "Nile", userAnswer: null, isCorrect: false },
+            { questionText: "What is the smallest country in the world?", correctAnswer: "Vatican City", userAnswer: null, isCorrect: false },
+          ],
+        },
+      ],
+    },
+    {
+      email: "evan@example.com",
+      username: "math_wizard",
+      password: "numbers123",
+      bio: "Numbers are my game.",
+      sessions: [
+        {
+          totalQuestions: 5,
+          score: 5,
+          status: "COMPLETED",
+          category: "Mathematics",
+          difficulty: "EASY",
+          results: [
+            { questionText: "What is 2 + 2?", correctAnswer: "4", userAnswer: "4", isCorrect: true },
+            { questionText: "What is 5 x 5?", correctAnswer: "25", userAnswer: "25", isCorrect: true },
+            { questionText: "What is the square root of 64?", correctAnswer: "8", userAnswer: "8", isCorrect: true },
+            { questionText: "What is 10 / 2?", correctAnswer: "5", userAnswer: "5", isCorrect: true },
+            { questionText: "What is 3 cubed?", correctAnswer: "27", userAnswer: "27", isCorrect: true },
+          ],
+        },
+      ],
+    },
+    {
+      email: "fiona@example.com",
+      username: "fiona_reads",
+      password: "literaturelover",
+      bio: "Avid reader, terrible at trivia.",
+      sessions: [], // User with no sessions yet
+    }
+  ];
+
+  for (const u of rawUsers) {
+    const passwordHash = await Bun.password.hash(u.password);
+    
+    const exp = getRandomExp();
+
+    const userData: Prisma.UserCreateInput = {
+      email: u.email,
+      username: u.username,
+      passwordHash: passwordHash,
+      bio: u.bio,
+      exp: exp,
+      sessions: {
+        create: u.sessions?.map((session) => ({
+          totalQuestions: session.totalQuestions,
+          score: session.score,
+          status: session.status as SessionStatus,
+          category: session.category,
+          difficulty: session.difficulty as Difficulty,
+          results: {
+            create: session.results.map((result) => ({
+              questionText: result.questionText,
+              correctAnswer: result.correctAnswer,
+              userAnswer: result.userAnswer,
+              isCorrect: result.isCorrect,
+            })),
+          },
+        })),
+      },
+    };
+
+    const createdUser = await prisma.user.create({ data: userData });
+    console.log(`✅ Created user: ${createdUser.username} (EXP: ${createdUser.exp}, Sessions: ${u.sessions.length})`);
+  }
+
+  console.log("🎉 Seeding completed successfully!");
+}
+
+main()
+  .catch((e) => {
+    console.error("❌ Seeding failed:");
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+</file>
+
+<file path="backend/src/lib/users_lib.ts">
+import z from "zod";
+
+export interface UserProfileResponse {
+  message: string; 
+  user: {
+    id: string;
+    username: string;
+    bio: string | null;
+    avatarUrl: string | null;
+    exp: number | null;
+    title: string | null;
+  };
+}
+
+export const userParamsSchema = z.object({
+  username: z.string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username cannot exceed 30 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores allowed"),
+});
+
+export const updateUserSchema = z.object({
+  bio: z.string().max(500, "Bio cannot exceed 500 characters").optional(),
+  username: z.string()
+    .min(3, "Username must be at least 3 characters")
+    .max(30, "Username cannot exceed 30 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores allowed")
+    .optional(),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Current password is required"),
+  newPassword: z.string().min(12, "New password must be at least 12 characters"),
+});
+
+export const TITLE_THRESHOLDS = [
+  { minExp: 20000, title: 'PINNACLE' },
+  { minExp: 19000, title: 'LEGEND' },
+  { minExp: 18000, title: 'CHAMPION' },
+  { minExp: 17000, title: 'GRANDMASTER' },
+  { minExp: 16000, title: 'MASTER' },
+  { minExp: 15000, title: 'ELITE' },
+  { minExp: 14000, title: 'VETERAN' },
+  { minExp: 13000, title: 'EXPERT' },
+  { minExp: 12000, title: 'PROFESSIONAL' },
+  { minExp: 11000, title: 'SPECIALIST' },
+  { minExp: 10000, title: 'ADVANCED' },
+  { minExp: 9000, title: 'EXPERIENCED' },
+  { minExp: 8000, title: 'PROFICIENT' },
+  { minExp: 7000, title: 'COMPETENT' },
+  { minExp: 6000, title: 'INTERMEDIATE' },
+  { minExp: 5000, title: 'APPRENTICE' },
+  { minExp: 4000, title: 'AMATEUR' },
+  { minExp: 3000, title: 'ROOKIE' },
+  { minExp: 2000, title: 'NOVICE' },
+  { minExp: 1000, title: 'TRAINEE' },
+  { minExp: 0, title: 'BEGINNER' }
+] as const; 
+
+export function calculateTitle(exp: number): string {
+  const level = TITLE_THRESHOLDS.find(t => exp >= t.minExp);
+  
+  return level ? level.title : 'BEGINNER'; 
+}
+</file>
+
+<file path="backend/src/routes/questions.ts">
+import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
+import type { Difficulty } from "../generated/prisma/enums";
+import type { FetchQuestionsOptions } from "../lib/opentdb";
+import { fetchQuestions, OpenTDBError } from "../lib/opentdb";
+import { finishQuizSchema, shuffleArray } from "../lib/questions_lib";
+import type { Env } from "../types";
+
+const questions = new Hono<Env>();
+
+// Get questions (for Users that are not logged in)
+questions.get("/", async (c) => {
+  const amountParam = c.req.query("amount");
+  const categoryParam = c.req.query("category");
+  const difficultyParam = c.req.query("difficulty");
+  const typeParam = c.req.query("type");
+
+  // amount is required by OpenTDB API, default to 10 if not provided
+  const amount = amountParam ? parseInt(amountParam, 10) : 10;
+
+  if (Number.isNaN(amount) || amount <= 0 || amount > 50) {
+    return c.json(
+      { error: "Invalid amount parameter. Must be between 1 and 50." },
+      400,
+    );
+  }
+
+  const options: FetchQuestionsOptions = { amount };
+
+  if (categoryParam) {
+    const category = parseInt(categoryParam, 10);
+    if (!Number.isNaN(category)) {
+      options.category = category;
+    }
+  }
+
+  if (
+    difficultyParam === "easy" ||
+    difficultyParam === "medium" ||
+    difficultyParam === "hard"
+  ) {
+    options.difficulty = difficultyParam;
+  }
+
+  if (typeParam === "multiple" || typeParam === "boolean") {
+    options.type = typeParam;
+  }
+
+  try {
+    const data = await fetchQuestions(options);
+    return c.json(data, 200);
+  } catch (error) {
+    if (error instanceof OpenTDBError) {
+      let httpStatus: 200 | 400 | 401 | 404 | 409 | 429 | 500 = 400;
+
+      switch (error.code) {
+        case 1:
+          httpStatus = 404;
+          break; // No Results
+        case 2:
+          httpStatus = 400;
+          break; // Invalid Parameter
+        case 3:
+          httpStatus = 401;
+          break; // Token Not Found
+        case 4:
+          httpStatus = 409;
+          break; // Token Empty
+        case 5:
+          httpStatus = 429;
+          break; // Rate Limit
+        default:
+          httpStatus = 400;
+      }
+
+      return c.json({ error: error.message, code: error.code }, httpStatus);
+    }
+
+    console.error("OpenTDB API Error:", error);
+    return c.json(
+      { error: "An unexpected error occurred while fetching questions." },
+      500,
+    );
+  }
+});
+
+// Start a QuizSession and fetch questions (for Users that are logged in)
+questions.post("/start", async (c) => {
+  const prisma = c.var.prisma;
+  const userId = c.var.jwtPayload.sub;
+
+  if (!userId) {
+    return c.json({ error: "userId is required to start a session." }, 400);
+  }
+
+  const amountParam = c.req.query("amount");
+  const categoryParam = c.req.query("category");
+  const difficultyParam = c.req.query("difficulty");
+  const typeParam = c.req.query("type");
+
+  // amount is required by OpenTDB API, default to 10 if not provided
+  const amount = amountParam ? parseInt(amountParam, 10) : 10;
+
+  if (Number.isNaN(amount) || amount <= 0 || amount > 50) {
+    return c.json(
+      { error: "Invalid amount parameter. Must be between 1 and 50." },
+      400,
+    );
+  }
+
+  const options: FetchQuestionsOptions = { amount };
+
+  if (categoryParam) {
+    const category = parseInt(categoryParam, 10);
+    if (!Number.isNaN(category)) {
+      options.category = category;
+    }
+  }
+
+  let prismaDifficulty: Difficulty | undefined ;
+
+  if (
+    difficultyParam === "easy" ||
+    difficultyParam === "medium" ||
+    difficultyParam === "hard"
+  ) {
+    options.difficulty = difficultyParam;
+    prismaDifficulty = difficultyParam.toUpperCase() as Difficulty;
+  }
+
+  if (typeParam === "multiple" || typeParam === "boolean") {
+    options.type = typeParam;
+  }
+
+  try {
+    const data = await fetchQuestions(options);
+
+    const readableCategory = data[0]?.category || null;
+
+    const session = await prisma.quizSession.create({
+      data: {
+        userId: userId,
+        totalQuestions: amount,
+        category: readableCategory,
+        difficulty: prismaDifficulty,
+      },
+    });
+
+    const resultsData = data.map((q) => ({
+      sessionId: session.id,
+      questionText: q.question,
+      correctAnswer: q.correct_answer,
+      isCorrect: false,
+      userAnswer: null,
+    }));
+
+    await prisma.quizResult.createMany({
+      data: resultsData,
+    });
+
+    const savedResults = await prisma.quizResult.findMany({
+      where: { sessionId: session.id },
+      select: { id: true, questionText: true },
+    });
+
+    const formattedQuestions = data.map((q) => {
+      const combinedAnswers = [q.correct_answer, ...q.incorrect_answers];
+      const dbResult = savedResults.find((r) => r.questionText === q.question);
+
+      const { correct_answer, incorrect_answers, ...rest } = q;
+
+      return {
+        ...rest,
+        resultId: dbResult?.id,
+        correctAnswer: correct_answer,
+        answers: shuffleArray(combinedAnswers),
+      };
+    });
+
+    return c.json(
+      {
+        sessionId: session.id,
+        sessionStatus: session.status,
+        questions: formattedQuestions,
+      },
+      200,
+    );
+  } catch (error) {
+    if (error instanceof OpenTDBError) {
+      let httpStatus: 200 | 400 | 401 | 404 | 409 | 429 | 500 = 400;
+
+      switch (error.code) {
+        case 1:
+          httpStatus = 404;
+          break; // No Results
+        case 2:
+          httpStatus = 400;
+          break; // Invalid Parameter
+        case 3:
+          httpStatus = 401;
+          break; // Token Not Found
+        case 4:
+          httpStatus = 409;
+          break; // Token Empty
+        case 5:
+          httpStatus = 429;
+          break; // Rate Limit
+        default:
+          httpStatus = 400;
+      }
+      console.log(error.message, error.code);
+      return c.json({ error: error.message, code: error.code }, httpStatus);
+    }
+
+    console.error("OpenTDB API Error:", error);
+    return c.json(
+      { error: "An unexpected error occurred while fetching questions." },
+      500,
+    );
+  }
+});
+
+// Finish a QuizSession and award EXP
+questions.post(
+  "/:sessionId/finish",
+  zValidator("json", finishQuizSchema),
+  async (c) => {
+    const prisma = c.var.prisma;
+    const userId = c.var.jwtPayload.sub;
+    const sessionId = c.req.param("sessionId");
+    const { answers } = c.req.valid("json");
+
+    try {
+      const session = await prisma.quizSession.findUnique({
+        where: { id: sessionId },
+        include: { results: true },
+      });
+
+      if (!session) {
+        return c.json({ error: "Quiz session not found." }, 404);
+      }
+
+      if (session.userId !== userId) {
+        return c.json({ error: "Unauthorized access to this session." }, 403);
+      }
+
+      if (session.status !== "IN_PROGRESS") {
+        return c.json(
+          {
+            error: `Cannot finish. Session is already ${session.status.toLowerCase()}.`,
+          },
+          400,
+        );
+      }
+
+      let finalScore = 0;
+      const updateOperations = [];
+
+      for (const submittedAnswer of answers) {
+        const dbRecord = session.results.find((r) => r.id === submittedAnswer.resultId);
+
+        if (!dbRecord) {
+          continue;
+        }
+
+        const isCorrect = submittedAnswer.userAnswer === dbRecord.correctAnswer;
+
+        if (isCorrect) {
+          finalScore++;
+        }
+
+        updateOperations.push(
+          prisma.quizResult.update({
+            where: { id: dbRecord.id },
+            data: {
+              userAnswer: submittedAnswer.userAnswer || null,
+              isCorrect: isCorrect,
+            },
+          }),
+        );
+      }
+
+      const expGained = finalScore;
+
+      await prisma.$transaction([
+        ...updateOperations,
+
+        prisma.quizSession.update({
+          where: { id: sessionId },
+          data: {
+            status: "COMPLETED",
+            score: finalScore,
+            endedAt: new Date(),
+          },
+        }),
+
+        prisma.user.update({
+          where: { id: userId },
+          data: {
+            exp: { increment: expGained },
+          },
+        }),
+      ]);
+
+      return c.json(
+        {
+          message: "Quiz completed successfully!",
+          score: finalScore,
+          totalQuestions: session.totalQuestions,
+          expGained: expGained,
+        },
+        200,
+      );
+    } catch (error) {
+      console.error("Failed to finish quiz session:", error);
+      return c.json({ error: "Failed to grade and save results." }, 500);
+    }
+  },
+);
+
+export default questions;
+</file>
+
+<file path="frontend/src/pages/LoginPage.jsx">
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { API_BASE_URL, joinPath } from '../config';
+
+export default function LoginPage() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const theme = {
+    background: '#121212',
+    cardBg: '#1e1e1e',
+    accent: '#7c4dff',
+    accentHover: '#6a3de8',
+    textMain: '#ffffff',
+    textSec: '#b3b3b3',
+    border: '#333333',
+    danger: '#ff5252'
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch(joinPath(API_BASE_URL, "auth", "login"), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: username,
+          password: password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        const msg = data.error?.message || data.error || 'Błąd logowania';
+        throw new Error(typeof msg === 'object' ? JSON.stringify(msg) : msg);
+      }
+
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('username', username);
+      navigate('/profile');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      minHeight: 'calc(100vh - 70px)',
+      backgroundColor: theme.background,
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: '20px',
+      fontFamily: 'sans-serif'
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: '400px',
+        backgroundColor: theme.cardBg,
+        padding: '40px',
+        borderRadius: '16px',
+        border: `1px solid ${theme.border}`,
+        boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+          <h1 style={{ color: theme.textMain, fontSize: '28px', margin: '0 0 10px 0' }}>Welcome back!</h1>
+          <p style={{ color: theme.textSec, fontSize: '14px' }}>Log in to earn EXP points</p>
+        </div>
+
+        {error && (
+          <div style={{
+            backgroundColor: 'rgba(255, 82, 82, 0.1)',
+            color: theme.danger,
+            padding: '12px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            fontSize: '14px',
+            border: `1px solid ${theme.danger}`
+          }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <label style={{ display: 'block', color: theme.textSec, marginBottom: '8px', fontSize: '13px' }}>Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g., alice_wonder"
+              required
+              style={inputStyle(theme)}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', color: theme.textSec, marginBottom: '8px', fontSize: '13px' }}>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              style={inputStyle(theme)}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            style={{
+              backgroundColor: theme.accent,
+              color: 'white',
+              border: 'none',
+              padding: '14px',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: 'bold',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
+              marginTop: '10px',
+              transition: 'background 0.2s'
+            }}
+            onMouseOver={(e) => !isLoading && (e.target.style.backgroundColor = theme.accentHover)}
+            onMouseOut={(e) => !isLoading && (e.target.style.backgroundColor = theme.accent)}
+          >
+            {isLoading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+const inputStyle = (theme) => ({
+  width: '100%',
+  padding: '12px 16px',
+  backgroundColor: '#121212',
+  border: `1px solid ${theme.border}`,
+  borderRadius: '8px',
+  color: 'white',
+  fontSize: '15px',
+  outline: 'none',
+  boxSizing: 'border-box'
+});
+</file>
+
+<file path="frontend/src/services/api.js">
+// src/services/api.js
+
+import { API_BASE_URL, joinPath } from "../config";
+
+const buildAuthHeaders = (token) => {
+  if (!token) {
+    return {};
+  }
+
+  return { Authorization: `Bearer ${token}` };
+};
+
+const handleResponse = async (response) => {
+  if (response.ok) {
+    return response.json();
+  }
+
+  let backendMessage = `Server error: ${response.status}`;
+  try {
+    const errorData = await response.json();
+    if (errorData?.error) {
+      backendMessage = errorData.error;
+    }
+  } catch {
+    // Ignore JSON parse errors and keep default message.
+  }
+
+  throw new Error(backendMessage);
+};
+
+// 1. Dodaliśmy 'category' jako trzeci argument
+export const fetchQuizQuestions = async (
+  amount = 10,
+  difficulty = "medium",
+  category = "",
+) => {
+  try {
+    // 2. Budujemy parametr kategorii tylko jeśli została wybrana
+    const categoryParam = category ? `&category=${category}` : "";
+
+    // 3. Budujemy pełny adres URL
+    const url = `${joinPath(API_BASE_URL, "questions")}?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
+
+    // 4. Wykonujemy JEDNO zapytanie pod właściwy adres
+    const response = await fetch(url);
+    return await handleResponse(response);
+  } catch (error) {
+    console.error("Error while fetching questions from backend:", error);
+    throw error;
+  }
+};
+
+export const startQuizSession = async ({
+  amount = 10,
+  difficulty = "medium",
+  category = "",
+  token,
+} = {}) => {
+  try {
+    const categoryParam = category ? `&category=${category}` : "";
+    const url = `${joinPath(API_BASE_URL, "questions", "start")}?amount=${amount}&difficulty=${difficulty}${categoryParam}`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...buildAuthHeaders(token),
+      },
+    });
+
+    return await handleResponse(response);
+  } catch (error) {
+    console.error("Error while starting quiz session:", error);
+    throw error;
+  }
+};
+
+export const finishQuizSession = async ({ sessionId, answers, token }) => {
+  try {
+    if (!sessionId) {
+      throw new Error("Session ID is required.");
+    }
+
+    const response = await fetch(
+      joinPath(API_BASE_URL, "questions", sessionId, "finish"),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...buildAuthHeaders(token),
+        },
+        body: JSON.stringify({ answers }),
+      },
+    );
+
+    return await handleResponse(response);
+  } catch (error) {
+    console.error("Error while finishing quiz session:", error);
+    throw error;
+  }
+};
+
+// Funkcja do pobierania listy kategorii do dropdowna
+export const fetchCategories = async () => {
+  try {
+    const response = await fetch(joinPath(API_BASE_URL, "categories"));
+    if (!response.ok) throw new Error("Failed to fetch categories");
+    return await response.json();
+  } catch (error) {
+    console.error("Category fetch error:", error);
+    throw error;
+  }
+};
+</file>
+
+<file path="backend/prisma/schema.prisma">
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SessionStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model User {
+  id           String  @id @default(uuid())
+  email        String  @unique
+  username     String  @unique
+  passwordHash String?
+
+  bio       String?
+  avatarUrl String?
+  exp       Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions QuizSession[]
+}
+
+model QuizSession {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status         SessionStatus @default(IN_PROGRESS)
+  score          Int           @default(0)
+  totalQuestions Int
+  category       String?
+  difficulty     Difficulty?
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  results QuizResult[]
+
+  @@index([userId])
+}
+
+model QuizResult {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  questionText  String
+  userAnswer    String?
+  correctAnswer String
+  isCorrect     Boolean
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}
+</file>
+
+<file path="backend/package.json">
+{
+  "name": "backend",
+  "module": "src/index.ts",
+  "devDependencies": {
+    "@biomejs/biome": "2.4.6",
+    "@types/bun": "latest",
+    "@types/pg": "^8.18.0",
+    "prisma": "^7.5.0",
+    "tsx": "^4.21.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "setup": "ln -s ../.env .env & bunx --bun prisma migrate deploy && bunx --bun prisma generate",
+    "setup-win": "mklink /H .env ..\\.env & bunx --bun prisma migrate deploy && bunx --bun prisma generate",
+    "start": "bun run src/index.ts",
+    "dev": "bun --hot src/index.ts",
+    "watch": "bun --watch src/index.ts",
+    "prisma-migrate-dev": "bunx --bun prisma migrate dev",
+    "seed": "bunx --bun prisma db seed",
+    "studio": "bunx --bun prisma studio"
+  },
+  "type": "module",
+  "dependencies": {
+    "@hono/zod-validator": "^0.8.0",
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "dotenv": "^17.3.1",
+    "hono": "^4.12.8",
+    "pg": "^8.20.0",
+    "zod": "^4.4.3"
+  }
+}
+</file>
+
+<file path="backend/README.md">
+# Setup backend
+
+> [!IMPORTANT] 
+> Ensure you have a .env file in the root project directory.
+
+> [!NOTE]
+> Current `schema.prisma` and `seed.ts` files are placeholders to verify the database connection
+
+1. Pull and run the db container (from root project directory)
+
+```
+docker compose up -d # or 'podman compose up -d'
+cd backend/
+```
+
+2. Install dependencies:
+```bash
+bun install
+```
+
+3. Link .env, apply migrations and generate Prisma Client files:
+```bash
+# For Linux and macOS
+bun run setup
+
+# For Windows
+bun run setup-win
+```
+
+4. Seed the database:
+```bash
+bun run seed
+```
+
+5. Run development server:
+```bash
+bun run dev
+```
+
+
+# API Endpoints
+
++ `GET /health`: Returns `200 OK` to confirm the server is reachable.
+
++ `GET /api/v1/users`: Returns a list of all users from the database.
+> [!NOTE]
+> This endpoint is a placeholder for testing purposes.
+
+
+# Other scripts
+
++ Creating and applying migrations (run after updating `schema.prisma`):
+```bash
+bun run prisma-migrate-dev
+```
+
+> [!NOTE]
+> If you add `--name <name>`, it bypasses the interactive prompt from Prisma.
+
++ Run Prisma Studio:
+```bash
+bun run studio
+```
+
++ Run production server:
+```bash
+bun run start
+```
+
++ Accessing database
+```bash
+docker exec postgres_db psql -U user -d app_database -c "\dt" -c "SELECT email, username FROM \"User\";" -c "SELECT * FROM \"QuizSession\";" -c "SELECT * FROM \"QuizResult\";"
+```
+
+> [!CAUTION]
+> You can drop development database with: `bunx --bun prisma migrate reset`
+</file>
+
+<file path="frontend/src/pages/LeaderboardPage.jsx">
+import { useState, useEffect } from 'react';
+import { API_BASE_URL, STATIC_BASE_URL, joinPath } from '../config';
+
+export default function LeaderboardPage() {
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const loadLeaderboard = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await fetch(joinPath(API_BASE_URL, "leaderboard"));
+
+        if (!response.ok) {
+          throw new Error(`Server error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (Array.isArray(data)) {
+          setLeaderboard(data);
+        } else {
+          throw new Error("Received data is not an array.");
+        }
+      } catch (err) {
+        console.error("Details of the error:", err);
+        setError(err.message === 'Failed to fetch'
+          ? "Cannot connect to the server. Check if the backend is running and if port 3000 is correct."
+          : err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadLeaderboard();
+  }, []);
+
+  const theme = {
+    background: '#121212',
+    cardBg: '#1e1e1e',
+    textMain: '#ffffff',
+    textSec: '#b3b3b3',
+    accent: '#7c4dff',
+    border: '#333333',
+    gold: '#FFD700',
+    silver: '#C0C0C0',
+    bronze: '#CD7F32',
+  };
+
+  if (isLoading) return <div style={centerStyle(theme)}>Loading leaderboard...</div>;
+
+  if (error) return (
+    <div style={centerStyle(theme)}>
+      <div style={{ color: '#ff5252', fontSize: '24px', marginBottom: '15px' }}>⚠️ Connection error</div>
+      <div style={{ fontSize: '14px', opacity: 0.8, maxWidth: '400px', margin: '0 auto', lineHeight: '1.6' }}>{error}</div>
+      <button
+        onClick={() => window.location.reload()}
+        style={{ marginTop: '30px', padding: '12px 24px', backgroundColor: theme.accent, color: '#fff', border: 'none', borderRadius: '30px', cursor: 'pointer', fontWeight: 'bold' }}
+      >
+        Try again
+      </button>
+    </div>
+  );
+
+  const top3 = leaderboard.slice(0, 3);
+  const restOfPlayers = leaderboard.slice(3);
+
+  return (
+    <div style={{
+      minHeight: 'calc(100vh - 70px)',
+      backgroundColor: theme.background,
+      color: theme.textMain,
+      padding: '40px 20px',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      fontFamily: 'sans-serif'
+    }}>
+      <div style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', gap: '50px' }}>
+
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ fontSize: '36px', marginBottom: '10px', fontWeight: 'bold' }}>Leaderboard</h1>
+          <p style={{ color: theme.textSec }}>Best players in the game!</p>
+        </div>
+
+        {/* PODIUM */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'flex-end',
+          gap: '15px',
+          height: '240px',
+          marginBottom: '20px'
+        }}>
+          {top3[1] && <PodiumStep player={top3[1]} place={2} height="120px" color={theme.silver} theme={theme} />}
+          {top3[0] && <PodiumStep player={top3[0]} place={1} height="170px" color={theme.gold} theme={theme} />}
+          {top3[2] && <PodiumStep player={top3[2]} place={3} height="80px" color={theme.bronze} theme={theme} />}
+        </div>
+
+        {/* TABELA */}
+        <div style={{
+          width: '100%',
+          backgroundColor: theme.cardBg,
+          borderRadius: '16px',
+          border: `1px solid ${theme.border}`,
+          overflow: 'hidden',
+          boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+        }}>
+          {leaderboard.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: theme.textSec }}>No data available in the leaderboard.</div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+              <thead>
+                <tr style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', borderBottom: `2px solid ${theme.border}` }}>
+                  <th style={{ padding: '20px', color: theme.textSec }}>Standing</th>
+                  <th style={{ padding: '20px', color: theme.textSec }}>Player</th>
+                  <th style={{ padding: '20px', color: theme.textSec }}>Title</th>
+                  <th style={{ padding: '20px', color: theme.textSec }}>Experience</th>
+                </tr>
+              </thead>
+              <tbody>
+                {restOfPlayers.map((player, index) => (
+                  <tr key={player.username || index} style={{ borderBottom: `1px solid ${theme.border}` }}>
+                    <td style={{ padding: '20px', fontWeight: 'bold', color: theme.textSec }}>{index + 4}</td>
+                    <td style={{ padding: '20px', color: theme.accent, fontWeight: 'bold' }}>{player.username}</td>
+                    <td style={{ padding: '20px', color: '#8fd3ff' }}>{player.title}</td>
+                    <td style={{ padding: '20px', fontWeight: 'bold' }}>{player.exp} XP</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PodiumStep({ player, place, height, color, theme }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '110px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '12px' }}>
+        <img
+          src={player.avatarUrl ? joinPath(STATIC_BASE_URL, player.avatarUrl) : `https://ui-avatars.com/api/?name=${player.username}&background=random`}
+          alt={player.username}
+          style={{ width: '50px', height: '50px', borderRadius: '50%', marginBottom: '8px', border: `3px solid ${color}`, objectFit: 'cover' }}
+        />
+        <span style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center', display: 'block', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {player.username}
+        </span>
+        <span style={{ fontSize: '11px', color: theme.accent, textTransform: 'uppercase', fontWeight: 'bold' }}>{player.title}</span>
+      </div>
+      <div style={{
+        width: '100%',
+        height: height,
+        backgroundColor: theme.accent,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+        paddingTop: '10px',
+        borderTopLeftRadius: '12px',
+        borderTopRightRadius: '12px',
+        boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.2)'
+      }}>
+        <div style={{
+          width: '30px',
+          height: '30px',
+          backgroundColor: color,
+          borderRadius: '50%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          fontWeight: 'bold',
+          color: '#121212',
+          marginBottom: '5px'
+        }}>{place}</div>
+        <span style={{ fontSize: '12px', fontWeight: 'bold' }}>{player.exp} XP</span>
+      </div>
+    </div>
+  );
+}
+
+const centerStyle = (theme) => ({
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
+  alignItems: 'center',
+  textAlign: 'center',
+  padding: '20px',
+  backgroundColor: theme.background,
+  color: theme.textMain,
+  minHeight: '100vh',
+  fontFamily: 'sans-serif'
+});
+</file>
+
+<file path="frontend/src/pages/ProfilePage.jsx">
+import { useState, useEffect } from 'react';
+import { API_BASE_URL, STATIC_BASE_URL, joinPath } from '../config';
+
+export default function ProfilePage() {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const token = localStorage.getItem('token');
+  const storedUsername = localStorage.getItem('username');
+
+  const theme = {
+    background: '#121212',
+    cardBg: '#1e1e1e',
+    textMain: '#ffffff',
+    textSec: '#b3b3b3',
+    accent: '#7c4dff',
+    border: '#333333',
+    success: '#4CAF50',
+  };
+
+  useEffect(() => {
+    if (!token || !storedUsername) {
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(joinPath(API_BASE_URL, "users", storedUsername), {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch profile');
+
+        const data = await response.json();
+        setUser(data.user);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [token, storedUsername]);
+
+  if (isLoading) return <div style={centerStyle(theme)}>Loading...</div>;
+
+  // WIDOK: NIEZALOGOWANY
+  if (!token || !storedUsername) {
+    return (
+      <div style={centerStyle(theme)}>
+        <div style={{ backgroundColor: theme.cardBg, padding: '40px', borderRadius: '16px', border: `1px solid ${theme.border}` }}>
+          <h2>Log in to see profile page</h2>
+          <p style={{ color: theme.textSec }}>Your stats and game history are waiting!</p>
+          <button
+            onClick={() => window.location.href = '/login'} // Tymczasowe przekierowanie
+            style={{ backgroundColor: theme.accent, color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', marginTop: '10px' }}
+          >
+            Log in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) return <div style={centerStyle(theme)}>Error: {error}</div>;
+
+  // WIDOK: ZALOGOWANY
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: theme.background, color: theme.textMain, padding: '40px 20px', fontFamily: 'sans-serif' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '30px' }}>
+
+        {/* HEADER */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '25px', backgroundColor: theme.cardBg, padding: '30px', borderRadius: '16px', border: `1px solid ${theme.border}` }}>
+          <div style={{ width: '80px', height: '80px', borderRadius: '50%', backgroundColor: 'rgba(124, 77, 255, 0.2)', border: `2px solid ${theme.accent}`, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '28px', color: theme.accent }}>
+            {user.avatarUrl ? <img src={joinPath(STATIC_BASE_URL, user.avatarUrl)} alt="Avatar" style={{ width: '100%', borderRadius: '50%' }} /> : user.username[0].toUpperCase()}
+          </div>
+          <div>
+            <h1 style={{ margin: 0 }}>{user.username}</h1>
+            <p style={{ color: theme.accent, fontWeight: 'bold', margin: '5px 0' }}>{user.title || 'Novice'}</p>
+            <p style={{ color: theme.textSec, fontSize: '14px' }}>{user.bio || 'No bio yet.'}</p>
+          </div>
+        </div>
+
+        {/* STATS */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+          <StatCard title="Total EXP" value={user.exp} theme={theme} color={theme.accent} />
+          {/* Historia gier wymagałaby osobnego endpointu, którego jeszcze nie ma w Twoim kodzie */}
+          <StatCard title="Rank Status" value="Active" theme={theme} />
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value, theme, color }) {
+  return (
+    <div style={{ backgroundColor: theme.cardBg, padding: '20px', borderRadius: '12px', border: `1px solid ${theme.border}`, textAlign: 'center' }}>
+      <div style={{ color: theme.textSec, fontSize: '12px', textTransform: 'uppercase', marginBottom: '8px' }}>{title}</div>
+      <div style={{ fontSize: '32px', fontWeight: 'bold', color: color || theme.textMain }}>{value}</div>
+    </div>
+  );
+}
+
+const centerStyle = (theme) => ({
+  display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: theme.background, color: theme.textMain
+});
+</file>
+
+<file path="frontend/src/App.jsx">
+// src/App.jsx
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Header from './components/Header';
+import './App.css';
+
+// Importy stron
+import QuestionsPage from './pages/QuestionsPage';
+import ResultsPage from './pages/ResultsPage';
+import QuizConfigPage from './pages/QuizConfigPage';
+import StartPage from './pages/StartPage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
+
+// --- Główny komponent Aplikacji ---
+function App() {
+  return (
+    <Router>
+      <div style={{ minHeight: '100vh', backgroundColor: '#121212' }}> {/* Zmieniłem tło na ciemne, żeby pasowało do reszty */}
+
+        {/* Nasz wspólny pasek na górze */}
+        <Header />
+
+        {/* Dynamiczny środek strony */}
+        <Routes>
+          <Route path="/" element={<StartPage />} />
+          <Route path="/quizpage" element={<QuizConfigPage />} />
+          <Route path="/questionspage" element={<QuestionsPage />} />
+          <Route path="/results" element={<ResultsPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+
+          {/* NOWE TRASY */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<div style={{ padding: '50px', color: '#fff' }}>Registration coming soon</div>} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
+</file>
+
+<file path="backend/src/routes/users.ts">
+import { zValidator } from "@hono/zod-validator";
+import { Hono } from "hono";
+import { unlink } from "node:fs/promises";
+import { calculateTitle, changePasswordSchema, updateUserSchema, userParamsSchema, type UserProfileResponse } from "../lib/users_lib";
+import type { Env } from "../types";
+
+const users = new Hono<Env>();
+
+// Get user profile
+users.get("/:username", zValidator("param", userParamsSchema), async (c) => {
+  const username = c.req.valid("param").username;
+  const prisma = c.var.prisma;
+
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      username: username
+    }
+  });
+
+  if (!existingUser) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  return c.json<UserProfileResponse>({
+    message: "Profile retrieved successfully",
+    user: {
+      id: existingUser.id,
+      username: existingUser.username,
+      bio: existingUser.bio,
+      avatarUrl: existingUser.avatarUrl,
+      exp: existingUser.exp,
+      title: calculateTitle(existingUser.exp)
+    }
+  }, 200);
+});
+
+// Update profile
+users.patch("/me", zValidator("json", updateUserSchema), async (c) => {
+  const prisma = c.var.prisma;
+  const userId = c.var.jwtPayload.sub;
+
+  const newBio = c.req.valid("json").bio;
+  const newUsername = c.req.valid("json").username;
+
+  if (newUsername) {
+    const existingUser = await prisma.user.findUnique({
+      where: {
+        username: newUsername
+      }
+    });
+
+    if (existingUser && existingUser.id !== userId) {
+      return c.json({ error: "Username is already taken" }, 409);
+    }
+  }
+
+  try {
+    const updatedUser = await prisma.user.update({
+        where: { id: userId },
+        data: {
+          bio: newBio,
+          username: newUsername
+        },
+        select: {
+          id: true,
+          username: true,
+          bio: true,
+          avatarUrl: true,
+          exp: true,
+          title: true
+        }
+      });
+
+      return c.json<UserProfileResponse>({ 
+        message: "Profile updated successfully", 
+        user: updatedUser 
+      }, 200);
+
+    } catch (error) {
+      console.error("Failed to update profile:", error);
+      return c.json({ error: "Failed to update profile" }, 500);
+    }
+});
+
+// Change password
+users.patch("/me/password", zValidator("json", changePasswordSchema), async (c) => {
+  const prisma = c.var.prisma;
+  const { currentPassword, newPassword } = c.req.valid("json");
+  const userId = c.var.jwtPayload.sub;
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId
+    },
+    select: {
+      passwordHash: true
+    }
+  });
+
+  if (!user) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  if (!user.passwordHash) {
+    return c.json({ error: "Cannot change password for OAuth account" }, 400);
+  }
+
+  const matching = await Bun.password.verify(currentPassword, user.passwordHash);
+  if (!matching) {
+    return c.json({ error: "Incorrect current password" }, 401);
+  }
+
+  const newPasswordHash = await Bun.password.hash(newPassword);
+
+  await prisma.user.update({
+    where: {
+      id: userId
+    },
+    data: {
+      passwordHash: newPasswordHash
+    }
+  });
+
+  return c.json({ message: "Password updated successfully" }, 200);
+});
+
+users.delete("/me", async (c) => {
+  const prisma = c.var.prisma;
+  const userId = c.var.jwtPayload.sub;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId
+      },
+      select: {
+        avatarUrl: true
+      }
+    });
+
+    if (!user) {
+      return c.json({ error: "User not found" }, 404);
+    }
+
+    await prisma.user.delete({
+      where: {
+        id: userId
+      }
+    });
+
+    if (user.avatarUrl) {
+      try {
+        await unlink(`static/${user.avatarUrl}`);
+      } catch (err) {
+        console.warn(`Could not delete avatar file for deleted user: ${userId}`);
+      }
+    }
+
+    return c.json({ message: "Account successfully deleted" }, 200);
+  } catch (err) {
+    console.error(`Failed to delete account: ${err}`);
+    return c.json({ error: "Failed to delete account" }, 500);
+  }
+});
+
+// Avatar upload
+users.post("/avatar", async (c) => {
+  const payload = c.var.jwtPayload;
+  const userId = payload.sub;
+
+  // Parse the multipart/form-data body
+  const body = await c.req.parseBody();
+  const file = body["image"];
+
+  if (!file || !(file instanceof File)) {
+    return c.json({ error: "An image file is required" }, 400);
+  }
+
+  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  if (!allowedMimeTypes.includes(file.type)) {
+    return c.json({ 
+      error: "Invalid file type. Only JPEG, PNG, WEBP, and GIF are allowed." 
+    }, 415);
+  }
+
+  const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3 MB in bytes
+  if (file.size > MAX_FILE_SIZE) {
+    return c.json({ 
+      error: "File size exceeds the 3MB limit. Please upload a smaller image." 
+    }, 413); // 413 Payload Too Large
+  }
+
+  const prisma = c.var.prisma;
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { avatarUrl: true }
+  });
+
+  const extension = file.name.split('.').pop();
+  const uniqueFilename = `avatar-${userId}.${extension}`;
+  const diskPath = `static/${uniqueFilename}`; // `static` dir will be in `backend/`
+
+  try {
+    await Bun.write(diskPath, file);
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl: uniqueFilename },
+    });
+
+    if (currentUser?.avatarUrl && currentUser.avatarUrl !== uniqueFilename) {
+      try {
+        const oldAvatar = `static/${currentUser.avatarUrl}`
+        await unlink(`${oldAvatar}`);
+      } catch (err) {
+        console.error("Failed to delete old avatar:", err); 
+      }
+    }
+
+    return c.json<UserProfileResponse>({ 
+      message: "Avatar uploaded successfully", 
+      user: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        bio: updatedUser.bio,
+        avatarUrl: updatedUser.avatarUrl,
+        exp: updatedUser.exp,
+        title: calculateTitle(updatedUser.exp)
+      } 
+    }, 200);
+
+  } catch (error) {
+    console.error("Failed to save image:", error);
+    return c.json({ error: "Failed to upload image" }, 500);
+  }
+});
+
+export default users;
+</file>
+
+<file path="backend/src/index.ts">
+import { Hono } from "hono";
+import { serveStatic } from "hono/bun";
+import { cors } from "hono/cors";
+import { jwt } from "hono/jwt";
+import { logger } from "hono/logger";
+import withPrisma from "./lib/prisma";
+import auth from "./routes/auth";
+import categories from "./routes/categories";
+import leaderboard from "./routes/leaderboard";
+import questions from "./routes/questions";
+import users from "./routes/users";
+import type { Env } from "./types";
+
+const jwtSecret = Bun.env.JWT_SECRET;
+
+if (!jwtSecret) {
+  throw new Error("FATAL: JWT_SECRET is not set in .env");
+}
+
+const app = new Hono<Env>();
+
+app.use("*", async (c, next) => {
+  c.set("jwtSecret", jwtSecret);
+  await next();
+});
+app.use(logger());
+app.use("*", cors());
+app.use("*", withPrisma);
+
+// Serve static images (for user avatars)
+app.use(
+  "/static/*",
+  serveStatic({
+    root: "./static",
+    rewriteRequestPath: (path) => path.replace(/^\/static/, ""),
+    onNotFound: (path, c) => {
+      console.log(`${path} is not found, you access ${c.req.path}`);
+    },
+  }),
+);
+
+// Public endpoints
+app.get("/health", (c) => {
+  return c.json({ status: "ok" }, 200);
+});
+
+// Protected routes
+app.use("/api/v1/users/*", async (c, next) => {
+  const jwtMiddleware = jwt({ secret: jwtSecret, alg: "HS256" });
+  return jwtMiddleware(c, next);
+});
+
+app.use("/api/v1/questions/start", async (c, next) => {
+  const jwtMiddleware = jwt({ secret: jwtSecret, alg: "HS256" });
+  return jwtMiddleware(c, next);
+});
+
+app.use("/api/v1/questions/:sessionId/finish", async (c, next) => {
+  const jwtMiddleware = jwt({ secret: jwtSecret, alg: "HS256" });
+  return jwtMiddleware(c, next);
+});
+
+// Mounted endpoints
+app.route("/api/v1/auth", auth);
+app.route("/api/v1/users", users);
+app.route("/api/v1/questions", questions);
+app.route("/api/v1/categories", categories);
+app.route("/api/v1/leaderboard", leaderboard);
+
+export default app;
+</file>
+
+</files>

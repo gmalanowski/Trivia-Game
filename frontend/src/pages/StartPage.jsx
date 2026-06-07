@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 
 export default function StartPage() {
+  const isLoggedIn = !!localStorage.getItem('token');
+
   return (
     <section className="start-page">
       <div className="start-page__card">
@@ -21,9 +23,13 @@ export default function StartPage() {
           <Link to="/quizpage" className="start-btn start-btn--primary">
             Start Quiz
           </Link>
-          <Link to="/register" className="start-btn start-btn--accent">
-            Sign Up
-          </Link>
+
+          {!isLoggedIn && (
+            <Link to="/register" className="start-btn start-btn--accent">
+              Sign Up
+            </Link>
+          )}
+
           <Link to="/leaderboard" className="start-btn start-btn--secondary">
             View Leaderboard
           </Link>

@@ -11,17 +11,16 @@ import StartPage from './pages/StartPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
 // --- Główny komponent Aplikacji ---
 function App() {
   return (
     <Router>
-      <div style={{ minHeight: '100vh', backgroundColor: '#121212' }}> {/* Zmieniłem tło na ciemne, żeby pasowało do reszty */}
+      <div style={{ minHeight: '100vh', backgroundColor: '#121212' }}>
 
-        {/* Nasz wspólny pasek na górze */}
         <Header />
 
-        {/* Dynamiczny środek strony */}
         <Routes>
           <Route path="/" element={<StartPage />} />
           <Route path="/quizpage" element={<QuizConfigPage />} />
@@ -29,10 +28,8 @@ function App() {
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/profile" element={<ProfilePage />} />
-
-          {/* NOWE TRASY */}
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<div style={{ padding: '50px', color: '#fff' }}>Registration coming soon</div>} />
+          <Route path="/register" element={<RegisterPage />} />
         </Routes>
       </div>
     </Router>
