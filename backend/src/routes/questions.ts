@@ -135,7 +135,7 @@ questions.post("/start", async (c) => {
   try {
     const data = await fetchQuestions(options);
 
-    const readableCategory = data[0]?.category || null;
+    const readableCategory = categoryParam ? (data[0]?.category || null) : "Random";
 
     const session = await prisma.quizSession.create({
       data: {
