@@ -50,6 +50,44 @@ users.get("/me/history", zValidator("query", historyQuerySchema), async (c) => {
   }
 });
 
+// Get specific session details
+users.get("/me/history/:sessionId", async (c) => {
+  const prisma = c.var.prisma;
+  const userId = c.var.jwtPayload.sub;
+  const sessionId = c.req.param("sessionId");
+
+  try {
+    const session = await prisma.quizSession.findUnique({
+      where: { id: sessionId },
+      include: {
+        results: {
+          select: {
+            id: true,
+            questionText: true,
+            correctAnswer: true,
+            userAnswer: true,
+            isCorrect: true,
+            createdAt: true
+          }
+        }
+      }
+    });
+
+    if (!session) {
+      return c.json({ error: "Session not found" }, 404);
+    }
+
+    if (session.userId !== userId) {
+      return c.json({ error: "Unauthorized access to this session" }, 403);
+    }
+
+    return c.json(session, 200);
+  } catch (error) {
+    console.error("Failed to retrieve session details:", error);
+    return c.json({ error: "Failed to retrieve session details" }, 500);
+  }
+});
+
 // Get user profile
 users.get("/:username", zValidator("param", userParamsSchema), async (c) => {
   const username = c.req.valid("param").username;
