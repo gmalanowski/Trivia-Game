@@ -6,6 +6,7 @@ export default function RegisterPage() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -25,11 +26,22 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
-    // Frontend validation matching auth_lib.ts
+    // Frontend validation
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     if (password.length < 12) {
       setError('Password must be at least 12 characters long.');
       return;
     }
+
+    if (username.length < 3) {
+      setError('Username must be at least 3 characters long.');
+      return;
+    }
+
     if (!/^[a-zA-Z0-9_]+$/.test(username)) {
       setError('Username can only contain letters, numbers, and underscores.');
       return;
@@ -47,12 +59,33 @@ export default function RegisterPage() {
 
       const data = await response.json();
 
+      // Backend error handling
       if (!response.ok) {
-        let errorMsg = data.error || 'Registration failed';
-        if (typeof data.error === 'object') errorMsg = JSON.stringify(data.error);
+        let errorMsg = 'Registration failed. Please try again.';
+
+        if (data && data.error) {
+          if (typeof data.error === 'string') {
+            try {
+              const parsedError = JSON.parse(data.error);
+              if (Array.isArray(parsedError) && parsedError[0]?.message) {
+                errorMsg = parsedError[0].message;
+              } else {
+                errorMsg = data.error;
+              }
+            } catch (parseErr) {
+              errorMsg = data.error;
+            }
+          } else if (Array.isArray(data.error) && data.error[0]?.message) {
+            errorMsg = data.error[0].message;
+          } else if (typeof data.error === 'object') {
+            errorMsg = data.error.message || 'Registration failed.';
+          }
+        }
+
         throw new Error(errorMsg);
       }
 
+      // Success
       localStorage.setItem('token', data.token);
       localStorage.setItem('username', data.user.username);
 
@@ -85,13 +118,18 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label style={{ display: 'block', color: theme.textSec, marginBottom: '8px', fontSize: '13px' }}>Username</label>
+            <label style={{ display: 'block', color: theme.textSec, marginBottom: '8px', fontSize: '13px' }}>Username (min. 3 characters)</label>
             <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g., quiz_master" required style={inputStyle(theme)} />
           </div>
 
           <div>
             <label style={{ display: 'block', color: theme.textSec, marginBottom: '8px', fontSize: '13px' }}>Password (min. 12 characters)</label>
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={inputStyle(theme)} />
+          </div>
+
+          <div>
+            <label style={{ display: 'block', color: theme.textSec, marginBottom: '8px', fontSize: '13px' }}>Confirm Password</label>
+            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required style={inputStyle(theme)} />
           </div>
 
           <button type="submit" disabled={isLoading} style={{ backgroundColor: theme.accent, color: 'white', border: 'none', padding: '14px', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold', cursor: isLoading ? 'not-allowed' : 'pointer', marginTop: '10px' }}>
