@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { API_BASE_URL, joinPath } from '../config';
 
 export default function LoginPage() {
@@ -22,8 +22,8 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setError('');
+    setIsLoading(true);
 
     try {
       const response = await fetch(joinPath(API_BASE_URL, "auth", "login"), {
@@ -38,12 +38,12 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        const msg = data.error?.message || data.error || 'Błąd logowania';
-        throw new Error(typeof msg === 'object' ? JSON.stringify(msg) : msg);
+        throw new Error('Invalid username or password.');
       }
 
+      // Success
       localStorage.setItem('token', data.token);
-      localStorage.setItem('username', username);
+      localStorage.setItem('username', data.user.username);
       navigate('/profile');
     } catch (err) {
       setError(err.message);
@@ -92,7 +92,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
-            <label style={{ display: 'block', color: theme.textSec, marginBottom: '8px', fontSize: '13px' }}>Username</label>
+            <label style={{ display: 'block', color: theme.textSec, marginBottom: '8px', fontSize: '13px' }}>Username or Email</label>
             <input
               type="text"
               value={username}
@@ -133,9 +133,14 @@ export default function LoginPage() {
             onMouseOver={(e) => !isLoading && (e.target.style.backgroundColor = theme.accentHover)}
             onMouseOut={(e) => !isLoading && (e.target.style.backgroundColor = theme.accent)}
           >
-            {isLoading ? 'Logging in...' : 'Login'}
+            {isLoading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
+
+        <p style={{ textAlign: 'center', marginTop: '20px', color: theme.textSec, fontSize: '14px' }}>
+          Don't have an account? <Link to="/register" style={{ color: theme.accent, textDecoration: 'none' }}>Sign up</Link>
+        </p>
+
       </div>
     </div>
   );
