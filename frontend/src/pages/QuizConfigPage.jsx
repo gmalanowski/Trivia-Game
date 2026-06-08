@@ -7,6 +7,7 @@ export default function QuizConfigPage() {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [difficulty, setDifficulty] = useState('medium');
+  const [amount, setAmount] = useState(10);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
   useEffect(() => {
@@ -28,8 +29,10 @@ export default function QuizConfigPage() {
     const selectedCategoryName =
       categories.find((cat) => String(cat.id) === String(selectedCategory))?.name || 'Random';
 
+    const safeAmount = Math.max(1, Math.min(Number(amount), 50));
+
     navigate('/questionspage', {
-      state: { category: selectedCategory, difficulty, categoryName: selectedCategoryName },
+      state: { category: selectedCategory, difficulty, categoryName: selectedCategoryName, amount: safeAmount },
     });
   };
 
@@ -117,6 +120,28 @@ export default function QuizConfigPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        <div style={{ textAlign: 'left', marginBottom: '30px' }}>
+          <label style={{ color: theme.textMuted, display: 'block', marginBottom: '8px' }}>
+            Number of questions (max 50):
+          </label>
+          <input
+            type="number"
+            min="1"
+            max="50"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              borderRadius: '8px',
+              backgroundColor: '#333',
+              color: '#fff',
+              border: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
         </div>
 
         <button
