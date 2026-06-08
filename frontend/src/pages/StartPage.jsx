@@ -20,19 +20,27 @@ export default function StartPage() {
         </p>
 
         <div className="start-page__actions">
-          <Link to="/quizpage" className="start-btn start-btn--primary">
-            Start Quiz
-          </Link>
-
-          {!isLoggedIn && (
-            <Link to="/register" className="start-btn start-btn--accent">
-              Sign Up
-            </Link>
+          {isLoggedIn ? (
+            /* Widok dla ZALOGOWANEGO użytkownika */
+            <>
+              <Link to="/quizpage" className="start-btn start-btn--primary">
+                Start Quiz
+              </Link>
+              <Link to="/leaderboard" className="start-btn start-btn--secondary">
+                View Leaderboard
+              </Link>
+            </>
+          ) : (
+            /* Widok dla NIEZALOGOWANEGO użytkownika - tylko te dwie opcje */
+            <>
+              <Link to="/login" className="start-btn start-btn--primary">
+                Login
+              </Link>
+              <Link to="/register" className="start-btn start-btn--accent">
+                Sign Up
+              </Link>
+            </>
           )}
-
-          <Link to="/leaderboard" className="start-btn start-btn--secondary">
-            View Leaderboard
-          </Link>
         </div>
       </div>
     </section>
