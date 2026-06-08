@@ -1,5 +1,4 @@
-// src/App.jsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import './App.css';
 
@@ -13,8 +12,13 @@ import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 
-// --- Główny komponent Aplikacji ---
-function App() {
+// Komponent pomocniczy do blokowania dostępu dla niezalogowanych
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/login" replace />;
+}
+
+export default function App() {
   return (
     <Router>
       <div style={{ minHeight: '100vh', backgroundColor: '#121212' }}>
@@ -22,18 +26,29 @@ function App() {
         <Header />
 
         <Routes>
+          {/* Publiczne trasy dostępne dla każdego */}
           <Route path="/" element={<StartPage />} />
-          <Route path="/quizpage" element={<QuizConfigPage />} />
-          <Route path="/questionspage" element={<QuestionsPage />} />
-          <Route path="/results" element={<ResultsPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
+          {/* Prywatne trasy zabezpieczone przed osobami bez tokenu */}
+          <Route path="/quizpage" element={
+            <ProtectedRoute><QuizConfigPage /></ProtectedRoute>
+          } />
+          <Route path="/questionspage" element={
+            <ProtectedRoute><QuestionsPage /></ProtectedRoute>
+          } />
+          <Route path="/results" element={
+            <ProtectedRoute><ResultsPage /></ProtectedRoute>
+          } />
+          <Route path="/leaderboard" element={
+            <ProtectedRoute><LeaderboardPage /></ProtectedRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute><ProfilePage /></ProtectedRoute>
+          } />
         </Routes>
       </div>
     </Router>
   );
 }
-
-export default App;
