@@ -12,10 +12,11 @@ export default function QuestionsPage() {
   const navigate = useNavigate(); // Hook do przenoszenia między stronami
   const location = useLocation();
 
-  const { category, difficulty, categoryName } = location.state || {
+  const { category, difficulty, categoryName, amount } = location.state || {
     category: '',
     difficulty: 'medium',
     categoryName: 'Random',
+    amount: 10
   };
 
   const token = localStorage.getItem('token');
@@ -42,7 +43,7 @@ export default function QuestionsPage() {
 
       try {
         const data = await startQuizSession({
-          amount: 10,
+          amount: Math.min(amount || 10, 50),
           difficulty,
           category,
           token,
@@ -57,7 +58,7 @@ export default function QuestionsPage() {
       }
     };
     loadQuestions();
-  }, [category, difficulty, token]);
+  }, [category, difficulty, amount, token]);
 
   useEffect(() => {
     if (isLoading || questions.length === 0 || error) return;
