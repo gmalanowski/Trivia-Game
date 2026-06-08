@@ -10,17 +10,19 @@ export default function ProfilePage() {
   const [uploadError, setUploadError] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // States for Game History list
+  // States for Game History list & Pagination
   const [history, setHistory] = useState([]);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   // States for Modal (Specific Session Details)
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [sessionDetails, setSessionDetails] = useState(null);
   const [isModalLoading, setIsModalLoading] = useState(false);
   const [modalError, setModalError] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'mistakes', 'correct'
+  const [activeTab, setActiveTab] = useState('all');
 
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
@@ -76,15 +78,25 @@ export default function ProfilePage() {
     }
 
     const fetchHistory = async () => {
+      setIsHistoryLoading(true);
+      setHistoryError(null);
       try {
-        const response = await fetch(`${joinPath(API_BASE_URL, "users", "me", "history")}?limit=10`, {
+        const response = await fetch(`${joinPath(API_BASE_URL, "users", "me", "history")}?limit=10&page=${currentPage}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) throw new Error('Failed to fetch game history.');
 
         const result = await response.json();
-        setHistory(result.data || []);
+        const fetchedData = result.data || [];
+        setHistory(fetchedData);
+
+        if (result.totalPages !== undefined) {
+          setHasMore(currentPage < result.totalPages);
+        } else {
+          setHasMore(fetchedData.length === 10);
+        }
+
       } catch (err) {
         setHistoryError(err.message);
       } finally {
@@ -93,14 +105,14 @@ export default function ProfilePage() {
     };
 
     fetchHistory();
-  }, [token]);
+  }, [token, currentPage]);
 
   // Fetch Specific Session Details for Modal
   const handleSessionClick = async (sessionId) => {
     setSelectedSessionId(sessionId);
     setIsModalLoading(true);
     setModalError(null);
-    setActiveTab('all'); // Reset tab when opening new modal
+    setActiveTab('all');
 
     try {
       const response = await fetch(joinPath(API_BASE_URL, "users", "me", "history", sessionId), {
@@ -118,7 +130,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Close the Modal
   const closeModal = () => {
     setSelectedSessionId(null);
     setSessionDetails(null);
@@ -132,9 +143,7 @@ export default function ProfilePage() {
   };
 
   const handleAvatarClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
+    if (fileInputRef.current) fileInputRef.current.click();
   };
 
   const handleFileChange = async (e) => {
@@ -150,30 +159,22 @@ export default function ProfilePage() {
     try {
       const response = await fetch(joinPath(API_BASE_URL, "users", "avatar"), {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData,
       });
 
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload avatar.');
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to upload avatar.');
 
       setUser(data.user);
     } catch (err) {
       setUploadError(err.message);
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  // --- Helper functions for the Modal ---
   const getBadgeData = (score, total) => {
     if (!total) return { text: 'In Progress...', color: theme.textSec };
     const percentage = (score / total) * 100;
@@ -272,63 +273,87 @@ export default function ProfilePage() {
         <div style={{ marginTop: '20px' }}>
           <h2 style={{ fontSize: '22px', borderBottom: `1px solid ${theme.border}`, paddingBottom: '10px', marginBottom: '20px' }}>Recent Games</h2>
 
-          {isHistoryLoading ? (
+          {isHistoryLoading && history.length === 0 ? (
             <div style={{ textAlign: 'center', color: theme.textSec, padding: '20px' }}>Loading history...</div>
           ) : historyError ? (
             <div style={{ textAlign: 'center', color: theme.danger, padding: '20px' }}>⚠️ {historyError}</div>
-          ) : history.length === 0 ? (
+          ) : history.length === 0 && currentPage === 1 ? (
             <div style={{ padding: '20px', backgroundColor: theme.cardBg, borderRadius: '12px', border: `1px solid ${theme.border}`, textAlign: 'center', color: theme.textSec }}>
               You haven't played any games yet. Start a quiz to see your history!
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {history.map((session) => (
-                <div
-                  key={session.id}
-                  onClick={() => handleSessionClick(session.id)}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    backgroundColor: theme.cardBg,
-                    padding: '20px',
-                    borderRadius: '12px',
-                    border: `1px solid ${theme.border}`,
-                    cursor: 'pointer',
-                    transition: 'border-color 0.2s ease-in-out'
-                  }}
-                  onMouseOver={(e) => e.currentTarget.style.borderColor = theme.accent}
-                  onMouseOut={(e) => e.currentTarget.style.borderColor = theme.border}
-                >
-                  <div>
-                    <div style={{ fontWeight: 'bold', fontSize: '16px', color: theme.textMain }}>
-                      {session.category || 'Mixed Category'}
-                      <span style={{ fontSize: '12px', color: theme.accent, marginLeft: '10px', textTransform: 'uppercase' }}>
-                        {session.difficulty || 'Any'}
-                      </span>
-                    </div>
-                    <div style={{ color: theme.textSec, fontSize: '13px', marginTop: '6px' }}>
-                      {new Date(session.startedAt).toLocaleDateString()} at {new Date(session.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: session.score >= (session.totalQuestions / 2) ? theme.success : theme.accent }}>
-                      {session.score} / {session.totalQuestions}
-                    </div>
-                    <div style={{ color: theme.textSec, fontSize: '12px', marginTop: '4px' }}>
-                      {session.status === 'COMPLETED' ? 'Completed' : 'In Progress'}
-                    </div>
-                  </div>
+            <>
+              {history.length === 0 ? (
+                <div style={{ padding: '30px', backgroundColor: theme.cardBg, borderRadius: '12px', border: `1px solid ${theme.border}`, textAlign: 'center', color: theme.textSec, fontStyle: 'italic' }}>
+                  No more games found on this page. Click "Previous" to go back!
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', opacity: isHistoryLoading ? 0.5 : 1, transition: 'opacity 0.2s' }}>
+                  {history.map((session) => (
+                    <div
+                      key={session.id}
+                      onClick={() => handleSessionClick(session.id)}
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        backgroundColor: theme.cardBg, padding: '20px', borderRadius: '12px',
+                        border: `1px solid ${theme.border}`, cursor: 'pointer', transition: 'border-color 0.2s'
+                      }}
+                      onMouseOver={(e) => e.currentTarget.style.borderColor = theme.accent}
+                      onMouseOut={(e) => e.currentTarget.style.borderColor = theme.border}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 'bold', fontSize: '16px', color: theme.textMain }}>
+                          {session.category || 'Mixed Category'}
+                          <span style={{ fontSize: '12px', color: theme.accent, marginLeft: '10px', textTransform: 'uppercase' }}>
+                            {session.difficulty || 'Any'}
+                          </span>
+                        </div>
+                        <div style={{ color: theme.textSec, fontSize: '13px', marginTop: '6px' }}>
+                          {new Date(session.startedAt).toLocaleDateString()} at {new Date(session.startedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '20px', fontWeight: 'bold', color: session.score >= (session.totalQuestions / 2) ? theme.success : theme.accent }}>
+                          {session.score} / {session.totalQuestions}
+                        </div>
+                        <div style={{ color: theme.textSec, fontSize: '12px', marginTop: '4px' }}>
+                          {session.status === 'COMPLETED' ? 'Completed' : 'In Progress'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px', marginTop: '25px' }}>
+                <button
+                  disabled={currentPage === 1 || isHistoryLoading}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  style={paginationButtonStyle(currentPage === 1 || isHistoryLoading, theme)}
+                >
+                  ← Previous
+                </button>
+
+                <span style={{ color: theme.textSec, fontSize: '14px', fontWeight: 'bold' }}>
+                  Page {currentPage}
+                </span>
+
+                <button
+                  disabled={!hasMore || isHistoryLoading || history.length === 0}
+                  onClick={() => setCurrentPage(prev => prev + 1)}
+                  style={paginationButtonStyle(!hasMore || isHistoryLoading || history.length === 0, theme)}
+                >
+                  Next →
+                </button>
+              </div>
+            </>
           )}
         </div>
 
       </div>
 
-      {/* ENHANCED SESSION DETAILS MODAL */}
+      {/* SESSION DETAILS MODAL */}
       {selectedSessionId && (
         <div
           onClick={closeModal}
@@ -348,7 +373,7 @@ export default function ProfilePage() {
               boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
             }}
           >
-            {/* 1. Modal Header */}
+            {/* Modal Header */}
             <div style={{ padding: '20px 25px', borderBottom: `1px solid ${theme.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#181818' }}>
               <h3 style={{ margin: 0, color: theme.textMain, fontSize: '20px' }}>Post-Game Summary</h3>
               <button onClick={closeModal} style={{ background: 'transparent', border: 'none', color: theme.textSec, fontSize: '28px', cursor: 'pointer', lineHeight: '1' }}>
@@ -363,23 +388,14 @@ export default function ProfilePage() {
                 <div style={{ textAlign: 'center', color: theme.danger, padding: '40px 0' }}>⚠️ {modalError}</div>
               ) : sessionDetails ? (
                 <>
-                  {/* 2. Dynamic Performance Badge */}
-                  <div style={{
-                    backgroundColor: `${getBadgeData(sessionDetails.score, sessionDetails.totalQuestions).color}22`, // 22 adds transparency 
-                    padding: '15px',
-                    textAlign: 'center',
-                    borderBottom: `1px solid ${theme.border}`
-                  }}>
-                    <strong style={{
-                      color: getBadgeData(sessionDetails.score, sessionDetails.totalQuestions).color,
-                      fontSize: '18px',
-                      letterSpacing: '1px'
-                    }}>
+                  {/* Dynamic Performance Badge */}
+                  <div style={{ backgroundColor: `${getBadgeData(sessionDetails.score, sessionDetails.totalQuestions).color}22`, padding: '15px', textAlign: 'center', borderBottom: `1px solid ${theme.border}` }}>
+                    <strong style={{ color: getBadgeData(sessionDetails.score, sessionDetails.totalQuestions).color, fontSize: '18px', letterSpacing: '1px' }}>
                       {getBadgeData(sessionDetails.score, sessionDetails.totalQuestions).text}
                     </strong>
                   </div>
 
-                  {/* 3. Score Dashboard (Stats) */}
+                  {/* Score Dashboard */}
                   <div style={{ display: 'flex', borderBottom: `1px solid ${theme.border}` }}>
                     <div style={modalStatStyle(theme)}>
                       <div style={{ fontSize: '12px', color: theme.textSec, textTransform: 'uppercase', marginBottom: '5px' }}>Accuracy</div>
@@ -403,14 +419,14 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* 4. Tabs for Filtering */}
+                  {/* Tabs for Filtering */}
                   <div style={{ display: 'flex', padding: '15px 25px 0 25px', gap: '10px' }}>
                     <button onClick={() => setActiveTab('all')} style={tabStyle(activeTab === 'all', theme)}>All Questions</button>
                     <button onClick={() => setActiveTab('mistakes')} style={tabStyle(activeTab === 'mistakes', theme)}>Mistakes</button>
                     <button onClick={() => setActiveTab('correct')} style={tabStyle(activeTab === 'correct', theme)}>Correct</button>
                   </div>
 
-                  {/* 5. Question List (Filtered) */}
+                  {/* Question List */}
                   <div style={{ padding: '20px 25px' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                       {sessionDetails.results
@@ -421,32 +437,20 @@ export default function ProfilePage() {
                         })
                         .map((result, idx) => (
                           <div key={result.id} style={{ padding: '16px', backgroundColor: theme.cardLight, borderRadius: '10px', borderLeft: `4px solid ${result.isCorrect ? theme.success : theme.danger}` }}>
-                            <p
-                              style={{ margin: '0 0 10px 0', color: theme.textMain, fontSize: '15px', lineHeight: '1.4' }}
-                              dangerouslySetInnerHTML={{ __html: `<strong>Q:</strong> ${result.questionText}` }}
-                            />
-
+                            <p style={{ margin: '0 0 10px 0', color: theme.textMain, fontSize: '15px', lineHeight: '1.4' }} dangerouslySetInnerHTML={{ __html: `<strong>Q:</strong> ${result.questionText}` }} />
                             <div style={{ fontSize: '14px', marginBottom: '4px' }}>
                               <span style={{ color: theme.textSec }}>You answered: </span>
-                              <span
-                                style={{ color: result.isCorrect ? theme.success : theme.danger, fontWeight: 'bold' }}
-                                dangerouslySetInnerHTML={{ __html: result.userAnswer || 'Skipped / Timeout' }}
-                              />
+                              <span style={{ color: result.isCorrect ? theme.success : theme.danger, fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: result.userAnswer || 'Skipped / Timeout' }} />
                             </div>
-
                             {!result.isCorrect && (
                               <div style={{ fontSize: '14px' }}>
                                 <span style={{ color: theme.textSec }}>Correct answer: </span>
-                                <span
-                                  style={{ color: theme.success, fontWeight: 'bold' }}
-                                  dangerouslySetInnerHTML={{ __html: result.correctAnswer }}
-                                />
+                                <span style={{ color: theme.success, fontWeight: 'bold' }} dangerouslySetInnerHTML={{ __html: result.correctAnswer }} />
                               </div>
                             )}
                           </div>
                         ))}
 
-                      {/* Info jeśli filtr zwróci puste wyniki (np. gracz miał 100% i kliknie "Mistakes") */}
                       {sessionDetails.results.filter(r => activeTab === 'correct' ? r.isCorrect : activeTab === 'mistakes' ? !r.isCorrect : true).length === 0 && (
                         <div style={{ textAlign: 'center', padding: '20px', color: theme.textSec, fontStyle: 'italic' }}>
                           No questions found in this category.
@@ -465,7 +469,6 @@ export default function ProfilePage() {
   );
 }
 
-// Helper components for styling
 function StatCard({ title, value, theme, color }) {
   return (
     <div style={{ backgroundColor: theme.cardBg, padding: '20px', borderRadius: '12px', border: `1px solid ${theme.border}`, textAlign: 'center' }}>
@@ -475,24 +478,18 @@ function StatCard({ title, value, theme, color }) {
   );
 }
 
-const modalStatStyle = (theme) => ({
-  flex: 1,
-  padding: '15px',
-  textAlign: 'center',
-  backgroundColor: theme.cardBg
-});
-
-const tabStyle = (isActive, theme) => ({
+const paginationButtonStyle = (isDisabled, theme) => ({
   padding: '8px 16px',
-  backgroundColor: isActive ? theme.cardLight : 'transparent',
-  color: isActive ? theme.textMain : theme.textSec,
-  border: `1px solid ${isActive ? theme.border : 'transparent'}`,
-  borderBottom: 'none',
-  borderRadius: '8px 8px 0 0',
-  cursor: 'pointer',
+  backgroundColor: isDisabled ? '#1a1a1a' : theme.cardBg,
+  color: isDisabled ? '#555555' : theme.textMain,
+  border: `1px solid ${theme.border}`,
+  borderRadius: '8px',
+  cursor: isDisabled ? 'not-allowed' : 'pointer',
   fontSize: '14px',
-  fontWeight: isActive ? 'bold' : 'normal',
-  transition: 'all 0.2s'
+  fontWeight: 'bold',
+  transition: 'background-color 0.2s',
 });
 
+const modalStatStyle = (theme) => ({ flex: 1, padding: '15px', textAlign: 'center', backgroundColor: theme.cardBg });
+const tabStyle = (isActive, theme) => ({ padding: '8px 16px', backgroundColor: isActive ? theme.cardLight : 'transparent', color: isActive ? theme.textMain : theme.textSec, border: `1px solid ${isActive ? theme.border : 'transparent'}`, borderBottom: 'none', borderRadius: '8px 8px 0 0', cursor: 'pointer', fontSize: '14px', fontWeight: isActive ? 'bold' : 'normal', transition: 'all 0.2s' });
 const centerStyle = (theme) => ({ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 'calc(100vh - 70px)', backgroundColor: theme.background, color: theme.textMain });
